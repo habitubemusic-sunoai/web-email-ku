@@ -1,6 +1,5 @@
 export default {
   async email(message, env) {
-    // Menangkap email masuk dan membaca isinya
     let rawEmail = "";
     const reader = message.raw.getReader();
     while (true) {
@@ -8,8 +7,6 @@ export default {
       if (done) break;
       rawEmail += new TextDecoder().decode(value);
     }
-    
-    // Menyusun data email
     const data = {
       to: message.to,
       from: message.from,
@@ -17,15 +14,11 @@ export default {
       body: rawEmail,
       waktu: new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })
     };
-    
-    // Menyimpan ke database KV (Otomatis terhapus dalam 24 jam)
     await env.DB.put(Date.now().toString(), JSON.stringify(data), { expirationTtl: 86400 });
   },
 
   async fetch(request, env) {
     const url = new URL(request.url);
-    
-    // Jalur API untuk mengambil daftar pesan dari database
     if (url.pathname === "/api/pesan") {
       const { keys } = await env.DB.list();
       let emails = [];
@@ -36,7 +29,6 @@ export default {
       return new Response(JSON.stringify(emails.reverse()), {headers: {'Content-Type': 'application/json'}});
     }
 
-    // Tampilan Antarmuka Website (UI)
     const html = `<!DOCTYPE html>
     <html lang="id">
     <head>
@@ -45,30 +37,67 @@ export default {
       <title>Email Sementara - Habisuno</title>
       <script src="https://cdn.tailwindcss.com"></script>
     </head>
-    <body class="bg-gray-100 font-sans p-4">
-      <div class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-6 mt-4">
-        <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">Email Sementara Anda</h1>
+    <body class="bg-gray-50 text-gray-800 font-sans">
+      <div class="max-w-3xl mx-auto p-4 mt-8">
         
-        <div class="flex border-2 border-gray-300 rounded-lg overflow-hidden mb-6">
-          <input type="text" id="emailBox" value="bebas@habisuno.my.id" class="w-full px-3 py-3 text-lg outline-none bg-gray-50 text-gray-600" readonly>
-          <button onclick="salin()" class="bg-blue-600 text-white px-5 font-bold hover:bg-blue-700 active:bg-blue-800 transition">Salin</button>
+        <div class="flex flex-col items-center mb-8">
+          <h1 class="text-3xl sm:text-4xl font-bold mb-6 text-center text-gray-900">Email Sementara Anda:</h1>
+          
+          <div class="w-full max-w-lg bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
+            <div class="flex flex-col sm:flex-row gap-3 mb-6">
+              <input type="text" id="emailBox" class="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:outline-none text-center sm:text-left bg-gray-50 text-gray-700 font-medium" readonly>
+              <button onclick="salin()" class="bg-white border-2 border-gray-300 hover:bg-gray-100 text-gray-800 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                Salin 📋
+              </button>
+            </div>
+            
+            <div class="flex justify-center gap-4">
+              <button onclick="generateRandom()" class="border-2 border-red-500 text-red-500 hover:bg-red-50 font-bold py-2 px-8 rounded-full transition-colors">
+                Ganti Acak
+              </button>
+            </div>
+          </div>
         </div>
 
-        <h2 class="text-lg font-bold mb-3 border-b-2 pb-2 text-gray-700">Kotak Masuk (<span id="count">0</span>)</h2>
-        <div id="inbox" class="space-y-4">
-          <p class="text-center text-gray-500 text-sm mt-4">Menunggu email masuk...</p>
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="font-bold text-xl text-gray-800">Kotak masuk</h2>
+            <span class="bg-gray-800 text-white rounded-full px-4 py-1 text-sm font-bold shadow-sm" id="count">0</span>
+          </div>
+          
+          <div id="inbox" class="divide-y divide-gray-100">
+            <div class="p-12 text-center text-gray-500">
+              <p class="text-xl mb-2 font-medium">Kotak masuk kosong</p>
+              <p class="text-sm">Menunggu email masuk...</p>
+            </div>
+          </div>
         </div>
       </div>
 
       <script>
+        // Fungsi untuk mengacak nama email
+        function generateRandom() {
+          const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+          let result = '';
+          for (let i = 0; i < 10; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+          document.getElementById('emailBox').value = result + '@habisuno.my.id';
+        }
+
+        // Fungsi menyalin email ke clipboard HP
         function salin() {
           const kotak = document.getElementById('emailBox');
           kotak.select();
           kotak.setSelectionRange(0, 99999);
           navigator.clipboard.writeText(kotak.value);
-          alert('Berhasil disalin!');
+          alert('Alamat email berhasil disalin!');
         }
 
+        // Langsung acak email saat web pertama dibuka
+        window.onload = generateRandom;
+
+        // Fungsi untuk mengambil riwayat pesan dari database Cloudflare
         async function muatPesan() {
           try {
             const res = await fetch('/api/pesan');
@@ -77,15 +106,17 @@ export default {
             document.getElementById('count').innerText = pesan.length;
             
             if (pesan.length === 0) {
-              inbox.innerHTML = '<p class="text-center text-gray-500 text-sm mt-4">Menunggu email masuk...</p>';
-              return;
+              return; // Biarkan tulisan "kosong" jika belum ada pesan
             }
             
             inbox.innerHTML = pesan.map(p => \`
-              <div class="border rounded-lg p-4 bg-gray-50 shadow-sm">
-                <div class="font-bold text-gray-800 mb-1">\${p.subject}</div>
-                <div class="text-xs text-gray-500 mb-2">Dari: \${p.from} <br> Waktu: \${p.waktu}</div>
-                <div class="text-sm bg-white p-2 border rounded overflow-x-auto text-gray-700 h-32 overflow-y-auto">\${p.body.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+              <div class="p-6 hover:bg-gray-50 transition-colors">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2">
+                  <h3 class="font-bold text-lg text-gray-900">\${p.subject}</h3>
+                  <span class="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded">\${p.waktu}</span>
+                </div>
+                <div class="text-sm text-gray-600 mb-4"><strong>Dari:</strong> \${p.from} <br> <strong>Kepada:</strong> \${p.to}</div>
+                <div class="bg-white p-4 rounded-xl border border-gray-200 text-sm text-gray-700 whitespace-pre-wrap overflow-x-auto shadow-inner">\${p.body.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
               </div>
             \`).join('');
           } catch (e) {
@@ -93,6 +124,7 @@ export default {
           }
         }
         
+        // Cek email baru setiap 5 detik secara otomatis
         muatPesan();
         setInterval(muatPesan, 5000);
       </script>
