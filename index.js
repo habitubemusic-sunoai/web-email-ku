@@ -11,7 +11,7 @@ export default {
       b: b || "Isi Kosong",
       t: new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
     };
-    await e.DB.put(d.id, JSON.stringify(d), { expirationTtl: 420 }); // 420 detik = 7 menit
+    await e.DB.put(d.id, JSON.stringify(d), { expirationTtl: 420 }); // Auto hapus 420 detik (7 Menit)
   },
 
   async fetch(req, env) {
@@ -28,77 +28,68 @@ export default {
       return new Response("OK");
     }
 
-    // Mendapatkan IP & ISP Asli dari Cloudflare
     const ip = req.headers.get('cf-connecting-ip') || 'IP Tidak Terdeteksi';
     const isp = (req.cf && req.cf.asOrganization) ? req.cf.asOrganization : 'ISP Tidak Terdeteksi';
-    
-    // Mendeteksi Merek Perangkat dari User-Agent
-    const ua = req.headers.get('user-agent') || '';
-    let dev = 'Desktop/Lainnya';
-    if (/Vivo|V19|V20|V21|V22|V23|Y\d{2}/i.test(ua)) dev = 'Vivo';
-    else if (/Oppo|CPH/i.test(ua)) dev = 'Oppo';
-    else if (/Samsung|SM-/i.test(ua)) dev = 'Samsung';
-    else if (/Xiaomi|Redmi|Poco|MI\s/i.test(ua)) dev = 'Xiaomi';
-    else if (/Infinix|X6/i.test(ua)) dev = 'Infinix';
-    else if (/Realme|RMX/i.test(ua)) dev = 'Realme';
-    else if (/iPhone/i.test(ua)) dev = 'iPhone';
-    else if (/iPad/i.test(ua)) dev = 'iPad';
-    else if (/Android/i.test(ua)) dev = 'Android Lainnya';
-    else if (/Windows/i.test(ua)) dev = 'Windows PC';
 
     const html = "<!DOCTYPE html>\n" +
 "<html lang='id'>\n" +
 "<head>\n" +
 "  <meta charset='UTF-8'>\n" +
 "  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n" +
-"  <title>HABI MAIL</title>\n" +
+"  <title>HABI MAIL UNLIMITED</title>\n" +
 "  <script src='https://cdn.tailwindcss.com'></script>\n" +
-"  <link href='https://fonts.googleapis.com/css2?family=Product+Sans:wght@700&family=Poppins:wght@400;500;600;700&display=swap' rel='stylesheet'>\n" +
+"  <link href='https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700&family=Product+Sans:wght@700&family=Poppins:wght@400;500;600;700&display=swap' rel='stylesheet'>\n" +
 "  <style>\n" +
 "    body { font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #f1f5f9 0%, #e0e7ff 100%); }\n" +
 "    .glass { background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(255,255,255,0.5); }\n" +
-"    .font-google { font-family: 'Product Sans', Arial, sans-serif; font-weight: 700; letter-spacing: -1px; }\n" +
-"    @keyframes shine { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }\n" +
-"    .kilau-logo { background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.8) 50%, transparent 70%); background-size: 200% auto; animation: shine 7s ease-in-out 1 forwards; }\n" +
-"    @keyframes pulse-fast { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }\n" +
-"    .anim-pulse { animation: pulse-fast 1s infinite; }\n" +
+"    .font-google { font-family: 'Product Sans', Arial, sans-serif; font-weight: 700; letter-spacing: -2px; }\n" +
+"    .font-estetik { font-family: 'Playfair Display', serif; }\n" +
+"    \n" +
+"    /* Kilauan Logo 7 Detik */\n" +
+"    .logo-container { display: inline-block; -webkit-mask-image: linear-gradient(-75deg, rgba(0,0,0,1) 30%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,1) 70%); -webkit-mask-size: 200%; animation: shine-logo 7s ease-in-out 1 forwards; }\n" +
+"    @keyframes shine-logo { 0% { -webkit-mask-position: 200%; } 100% { -webkit-mask-position: -200%; } }\n" +
+"    \n" +
+"    /* Kilauan Copyright 4 Detik Tak Terbatas */\n" +
+"    .kilau-footer { background: linear-gradient(110deg, #64748b 40%, #ffffff 50%, #64748b 60%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; animation: shine-logo 4s linear infinite; }\n" +
+"    \n" +
+"    .badge-new { animation: pulse 1.5s infinite; }\n" +
+"    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }\n" +
 "  </style>\n" +
 "</head>\n" +
 "<body class='min-h-screen flex flex-col'>\n" +
 "  <div class='bg-gray-900 text-blue-300 text-[9px] px-4 py-2 flex justify-between font-bold shadow-sm uppercase'>\n" +
-"    <div id='hariJam'>Memuat Waktu...</div>\n" +
+"    <div id='waktuLengkap'>Memuat Waktu...</div>\n" +
 "    <div>📍 Jember, Jawa Timur</div>\n" +
 "  </div>\n" +
-"  <div class='bg-blue-900 text-white text-[8px] px-4 py-1 flex justify-between items-center shadow-inner uppercase tracking-wider'>\n" +
-"    <div>📱 " + dev + "</div>\n" +
-"    <div class='text-right'>🌐 IP: " + ip + " | ISP: " + isp + "</div>\n" +
+"  <div class='bg-blue-900 text-white text-[8px] px-4 py-1.5 flex justify-between items-center shadow-inner tracking-widest uppercase'>\n" +
+"    <div>📱 <span id='namaDevice' class='text-blue-200'>Mendeteksi...</span></div>\n" +
+"    <div class='text-right'>🌐 IP: <span class='text-blue-200'>" + ip + "</span> | ISP: <span class='text-blue-200'>" + isp + "</span></div>\n" +
 "  </div>\n" +
 "\n" +
-"  <div class='max-w-2xl mx-auto p-4 mt-6 flex-grow w-full text-center'>\n" +
-"    <div class='mb-8 relative inline-block kilau-logo px-4 py-2'>\n" +
-"      <h1 class='text-5xl font-google'>\n" +
-"        <span style='color: #4285F4'>H</span><span style='color: #EA4335'>a</span><span style='color: #FBBC05'>b</span><span style='color: #4285F4'>i</span>\n" +
-"        <span style='color: #34A853' class='ml-2'>M</span><span style='color: #EA4335'>a</span><span style='color: #FBBC05'>i</span><span style='color: #4285F4'>l</span>\n" +
-"      </h1>\n" +
+"  <div class='max-w-2xl mx-auto p-4 mt-8 flex-grow w-full text-center'>\n" +
+"    <div class='mb-8'>\n" +
+"      <div class='logo-container'>\n" +
+"        <h1 class='text-5xl font-google'>\n" +
+"          <span style='color: #4285F4'>H</span><span style='color: #EA4335'>a</span><span style='color: #FBBC05'>b</span><span style='color: #4285F4'>i</span>\n" +
+"          <span style='color: #34A853' class='ml-2'>M</span><span style='color: #EA4335'>a</span><span style='color: #FBBC05'>i</span><span style='color: #4285F4'>l</span>\n" +
+"        </h1>\n" +
+"      </div>\n" +
+"      <p class='text-gray-400 text-[10px] tracking-[0.2em] font-bold uppercase mt-2'>Layanan Email Sementara</p>\n" +
 "    </div>\n" +
 "\n" +
-"    <div class='glass p-8 rounded-3xl shadow-xl mb-6 border-t-4 border-blue-500'>\n" +
+"    <div class='glass p-8 rounded-3xl shadow-xl mb-8 border-t-4 border-blue-500'>\n" +
 "      <input type='text' id='em' class='w-full p-4 rounded-xl border-2 border-blue-100 text-center bg-gray-50 text-blue-700 font-bold mb-4' readonly>\n" +
-"      <div class='flex gap-2 mb-4'>\n" +
-"        <button onclick='sl()' class='flex-[2] bg-blue-600 text-white font-bold py-3 rounded-xl shadow-md active:scale-95 uppercase text-xs'>Salin Alamat Email 📋</button>\n" +
-"        <button onclick='gr(true)' class='flex-1 bg-white border-2 border-red-500 text-red-500 font-bold py-3 rounded-xl active:scale-95 uppercase text-[10px]'>Ganti Nama</button>\n" +
-"      </div>\n" +
-"      <div class='bg-red-50 text-red-600 border border-red-200 rounded-lg p-2 text-[10px] font-bold uppercase flex justify-between items-center'>\n" +
-"         <span>⏳ Waktu Tersisa:</span>\n" +
-"         <span id='timer' class='text-lg font-black'>07:00</span>\n" +
+"      <div class='flex flex-col gap-3'>\n" +
+"        <button onclick='sl()' class='w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md active:scale-95 uppercase text-sm'>Salin Alamat Email 📋</button>\n" +
+"        <button onclick='gr(true)' class='w-full bg-white border-2 border-red-500 text-red-500 font-bold py-3 rounded-xl active:scale-95 uppercase text-xs hover:bg-red-50 transition'>Ganti Nama (Cewek Jatim)</button>\n" +
 "      </div>\n" +
 "    </div>\n" +
 "\n" +
-"    <div class='glass rounded-3xl shadow-xl overflow-hidden mb-8 text-left'>\n" +
+"    <div class='glass rounded-3xl shadow-xl overflow-hidden mb-10 text-left'>\n" +
 "      <div class='bg-white px-6 py-4 border-b flex justify-between items-center font-bold'>\n" +
 "        <h2 class='text-gray-800 text-sm'>📥 KOTAK MASUK</h2>\n" +
 "        <div class='flex items-center gap-2'>\n" +
-"          <span class='text-[9px] text-green-500 font-bold uppercase anim-pulse'>Auto-Sync 🟢</span>\n" +
+"          <span class='text-[9px] text-green-500 font-bold uppercase badge-new'>Auto-Sync 🟢</span>\n" +
 "          <span class='bg-gray-800 text-white rounded-full px-3 py-1 text-xs' id='ct'>0</span>\n" +
 "        </div>\n" +
 "      </div>\n" +
@@ -106,53 +97,104 @@ export default {
 "        <p class='text-center text-gray-400 py-10 text-xs'>Kotak masuk kosong. Menunggu pesan...</p>\n" +
 "      </div>\n" +
 "    </div>\n" +
+"\n" +
+"    \n" +
+"    <div class='glass rounded-3xl p-8 text-center shadow-lg border-t-4 border-green-500 mb-10'>\n" +
+"      <h3 class='text-2xl font-extrabold mb-4 text-gray-800 font-estetik'>Definisi Kebebasan Tanpa Batas</h3>\n" +
+"      <p class='text-sm text-gray-600 mb-8 leading-relaxed font-medium'>\n" +
+"        <span class='text-blue-600 font-bold'>HABI MAIL UNLIMITED</span> adalah tameng privasi andalan Anda di dunia digital. Nikmati kemudahan pendaftaran akun massal secara anonim, hindari spam, dan lindungi data pribadi Anda. \n" +
+"        <br><br>\n" +
+"        <span class='italic text-gray-500 text-xs'>Pesan yang masuk akan terhapus otomatis secara permanen dalam hitungan mundur 7 Menit demi kerahasiaan Anda.</span>\n" +
+"      </p>\n" +
+"      <div class='relative inline-block'>\n" +
+"        <span class='absolute -top-3 -right-3 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded-full badge-new border-2 border-white z-10'>NEW</span>\n" +
+"        <a href='https://wa.me/6285119821813' target='_blank' class='bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-10 rounded-full shadow-xl inline-flex items-center gap-2 text-xs uppercase tracking-widest transition transform hover:scale-105'>\n" +
+"          <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' viewBox='0 0 16 16'><path d='M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z'/></svg>\n" +
+"          Chat Habi Mail\n" +
+"        </a>\n" +
+"      </div>\n" +
+"    </div>\n" +
 "  </div>\n" +
 "\n" +
-"  <script>\n" +
-"    const nD=['siti','ayu','dewi','sri','indah','ratna','fitri','wulan','rina','putri'];\n" +
-"    const nB=['ningsih','wati','sari','astuti','rahayu','lestari','susanti','wahyuni'];\n" +
-"    let lc=0; let tLeft=420;\n" +
-"    function gr(m=false){if(!m&&localStorage.getItem('he')){document.getElementById('em').value=localStorage.getItem('he');return;}const e=nD[Math.floor(Math.random()*nD.length)]+'.'+nB[Math.floor(Math.random()*nB.length)]+Math.floor(Math.random()*999)+'@habisuno.my.id';document.getElementById('em').value=e;localStorage.setItem('he',e); tLeft=420;}\n" +
-"    function sl(){navigator.clipboard.writeText(document.getElementById('em').value);alert('Email disalin!');}\n" +
-"    async function hp(id){if(!confirm('Hapus pesan ini?'))return;const r=await fetch('/api/del',{method:'POST',body:JSON.stringify({id})});if(r.ok){lc=0;chk();}}\n" +
-"    \n" +
-"    function upTmr() {\n" +
-"      if(tLeft <= 0) { gr(true); tLeft = 420; lc = 0; document.getElementById('ib').innerHTML = ''; document.getElementById('ct').innerText = '0'; return; }\n" +
-"      let m = Math.floor(tLeft / 60); let s = tLeft % 60;\n" +
-"      document.getElementById('timer').innerText = '0' + m + ':' + (s < 10 ? '0'+s : s);\n" +
-"      tLeft--;\n" +
-"    }\n" +
+"  \n" +
+"  <footer class='mt-auto py-8 bg-gray-900 text-center shadow-inner'>\n" +
+"    <p class='text-[10px] font-bold tracking-[0.4em] uppercase kilau-footer'>Copyright &copy; 2026 HABI MAIL UNLIMITED. All Rights Reserved.</p>\n" +
+"  </footer>\n" +
 "\n" +
+"  <script>\n" +
+"    const nD=['Zahra','Kania','Nabila','Kirana','Salsabila','Aurel','Nadhira','Cantika','Arsy','Syafira'];\n" +
+"    const nB=['Maharani','Larasati','Widya','Puspa','Kirani','Azzahra','Maheswari','Kusuma','Anggraini'];\n" +
+"    let lc=0; let curMsgs=[];\n" +
+"    function gr(m=false){if(!m&&localStorage.getItem('he')){document.getElementById('em').value=localStorage.getItem('he');return;}const e=nD[Math.floor(Math.random()*nD.length)]+'.'+nB[Math.floor(Math.random()*nB.length)]+Math.floor(Math.random()*999)+'@habisuno.my.id';document.getElementById('em').value=e;localStorage.setItem('he',e);}\n" +
+"    function sl(){navigator.clipboard.writeText(document.getElementById('em').value);alert('Email disalin!');}\n" +
+"    async function hp(id){if(!confirm('Hapus pesan ini?'))return;await fetch('/api/del',{method:'POST',body:JSON.stringify({id})}); chk();}\n" +
+"    \n" +
 "    async function chk() {\n" +
 "      try {\n" +
 "        const r = await fetch('/api/pesan?_=' + new Date().getTime()); const d = await r.json();\n" +
-"        document.getElementById('ct').innerText = d.length;\n" +
-"        if (d.length !== lc) {\n" +
-"          lc = d.length;\n" +
-"          if(d.length === 0){ document.getElementById('ib').innerHTML='<p class=\"text-center text-gray-400 py-10 text-xs\">Kotak masuk kosong. Menunggu pesan...</p>'; return; }\n" +
-"          document.getElementById('ib').innerHTML = d.map(function(p, i) {\n" +
-"            let nw = i === 0 ? '<span class=\"bg-red-500 text-white text-[8px] px-2 py-0.5 rounded font-bold anim-pulse\">NEW</span>' : '';\n" +
-"            return '<div class=\"bg-white p-4 rounded-2xl border border-gray-200 shadow-sm relative\">' +\n" +
-"              '<div class=\"flex justify-between items-center mb-2\"><div class=\"text-[9px] font-bold text-blue-500 uppercase\">' + p.t + '</div>' + nw + '</div>' +\n" +
-"              '<div class=\"font-bold text-gray-900 text-sm mb-1\">' + p.s + '</div>' +\n" +
-"              '<div class=\"text-[10px] text-gray-500 mb-3\">Dari: <b>' + p.f + '</b></div>' +\n" +
-"              '<div class=\"bg-gray-50 p-3 rounded-xl text-[11px] text-gray-700 mb-3 border border-gray-100 whitespace-pre-wrap\">' + p.b + '</div>' +\n" +
-"              '<button onclick=\"hp(\\'' + p.id + '\\')\" class=\"text-[9px] font-bold text-red-500 bg-red-50 border border-red-100 px-3 py-1.5 rounded-lg uppercase\">Hapus Manual</button>' +\n" +
-"            '</div>';\n" +
-"          }).join('');\n" +
-"        }\n" +
+"        curMsgs = d;\n" +
+"        renderMsgs();\n" +
 "      } catch (e) {}\n" +
 "    }\n" +
 "\n" +
+"    function renderMsgs() {\n" +
+"      let now = Date.now();\n" +
+"      let validMsgs = curMsgs.filter(function(p) { return Math.floor((now - parseInt(p.id))/1000) < 420; });\n" +
+"      document.getElementById('ct').innerText = validMsgs.length;\n" +
+"      if(validMsgs.length === 0){ document.getElementById('ib').innerHTML='<p class=\"text-center text-gray-400 py-10 text-xs\">Kotak masuk kosong. Menunggu pesan...</p>'; return; }\n" +
+"      \n" +
+"      document.getElementById('ib').innerHTML = validMsgs.map(function(p) {\n" +
+"        let age = Math.floor((now - parseInt(p.id)) / 1000);\n" +
+"        let left = 420 - age;\n" +
+"        let min = Math.floor(left / 60);\n" +
+"        let sec = left % 60;\n" +
+"        let timeStr = '0' + min + ':' + (sec < 10 ? '0'+sec : sec);\n" +
+"        \n" +
+"        return '<div class=\"bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative transition-all\">' +\n" +
+"          '<div class=\"flex justify-between items-center mb-3\">' +\n" +
+"             '<div class=\"text-[9px] font-bold text-blue-500 uppercase\">' + p.t + '</div>' +\n" +
+"          '</div>' +\n" +
+"          '<div class=\"font-bold text-gray-900 text-sm mb-1\">' + p.s + '</div>' +\n" +
+"          '<div class=\"text-[10px] text-gray-500 mb-3\">Dari: <b>' + p.f + '</b></div>' +\n" +
+"          '<div class=\"bg-gray-50 p-3 rounded-xl text-[11px] text-gray-700 mb-3 border border-gray-100 whitespace-pre-wrap\">' + p.b + '</div>' +\n" +
+"          '<div class=\"flex justify-between items-center\">' +\n" +
+"             '<span class=\"text-[9px] font-black text-red-600 bg-red-100 px-3 py-1.5 rounded-lg\">⏳ Sisa: ' + timeStr + '</span>' +\n" +
+"             '<button onclick=\"hp(\\'' + p.id + '\\')\" class=\"text-[9px] font-bold text-gray-500 hover:text-red-500 uppercase\">Hapus Manual</button>' +\n" +
+"          '</div>' +\n" +
+"        '</div>';\n" +
+"      }).join('');\n" +
+"    }\n" +
+"\n" +
+"    function deteksiHP() {\n" +
+"      let ua = navigator.userAgent;\n" +
+"      let b = 'Desktop/Lainnya';\n" +
+"      if (/vivo|V19|V20|V21|V22|V23|V25|V27|Y\\d{2}/i.test(ua)) b = 'Vivo';\n" +
+"      else if (/OPPO|CPH|Reno/i.test(ua)) b = 'Oppo';\n" +
+"      else if (/Samsung|SM-|GT-/i.test(ua)) b = 'Samsung';\n" +
+"      else if (/Xiaomi|Redmi|Poco|MI\\s/i.test(ua)) b = 'Xiaomi';\n" +
+"      else if (/Infinix|X6/i.test(ua)) b = 'Infinix';\n" +
+"      else if (/Realme|RMX/i.test(ua)) b = 'Realme';\n" +
+"      else if (/iPhone/i.test(ua)) b = 'iPhone';\n" +
+"      else if (/iPad/i.test(ua)) b = 'iPad';\n" +
+"      else if (/Android/i.test(ua)) b = 'Android';\n" +
+"      else if (/Windows/i.test(ua)) b = 'Windows PC';\n" +
+"      else if (/Macintosh/i.test(ua)) b = 'Mac OS';\n" +
+"      document.getElementById('namaDevice').innerText = b;\n" +
+"    }\n" +
+"\n" +
 "    const hri = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];\n" +
+"    const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];\n" +
+"    \n" +
 "    window.onload = () => { \n" +
 "      gr(); \n" +
+"      deteksiHP();\n" +
+"      chk();\n" +
 "      setInterval(() => { \n" +
 "        const n = new Date(); \n" +
-"        document.getElementById('hariJam').innerText = hri[n.getDay()] + ', ' + n.toLocaleTimeString('id-ID', {hour12:true}).replace(/\\./g,':'); \n" +
-"        upTmr();\n" +
-"        chk(); \n" +
+"        document.getElementById('waktuLengkap').innerText = hri[n.getDay()] + ', ' + n.getDate() + ' ' + bln[n.getMonth()] + ' ' + n.getFullYear() + ' | ' + n.toLocaleTimeString('id-ID', {hour12:true}).replace(/\\./g,':'); \n" +
+"        renderMsgs(); \n" +
 "      }, 1000); \n" +
+"      setInterval(chk, 3000);\n" +
 "    };\n" +
 "  </script>\n" +
 "</body>\n" +
