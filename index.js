@@ -14,7 +14,6 @@ export default {
       body: rawEmail,
       waktu: new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })
     };
-    // 86400 = 24 Jam. Pesan otomatis hancur setelah 1 hari.
     await env.DB.put(Date.now().toString(), JSON.stringify(data), { expirationTtl: 86400 });
   },
 
@@ -37,7 +36,7 @@ export default {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>HABI UNLIMITED MAIL</title>
       <script src="https://cdn.tailwindcss.com"></script>
-      <link href="https://fonts.googleapis.com/css2?family=Righteous&family=Poppins:wght@400;500;600;800&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@800;900&family=Poppins:wght@400;500;600;800&display=swap" rel="stylesheet">
       <style>
         body { 
           font-family: 'Poppins', sans-serif; 
@@ -51,48 +50,51 @@ export default {
           border: 1px solid rgba(255, 255, 255, 0.5);
         }
 
-        /* Animasi Kilau Logo 5 Detik (Sekali) */
+        /* LOGO: Font Montserrat, Kilau Premium Biru-Putih 5 Detik Sekali */
         @keyframes kilau-logo {
           0% { background-position: -200% center; }
           100% { background-position: 200% center; }
         }
         .logo-keren {
-          font-family: 'Righteous', cursive;
-          background: linear-gradient(110deg, #1e3a8a 30%, #3b82f6 50%, #1e3a8a 70%);
+          font-family: 'Montserrat', sans-serif;
+          background: linear-gradient(110deg, #1e3a8a 20%, #bfdbfe 50%, #1e3a8a 80%);
           background-size: 200% auto;
           color: transparent;
           -webkit-background-clip: text;
           background-clip: text;
-          animation: kilau-logo 5s ease-in-out 1;
+          animation: kilau-logo 5s cubic-bezier(0.4, 0, 0.2, 1) 1;
         }
 
-        /* Animasi Kilau Copyright Lambat (Terus Menerus) */
+        /* FOOTER: Kilau Silver Platinum 5 Detik Lambat Terus Menerus */
         @keyframes kilau-lambat {
           0% { background-position: 200% center; }
           100% { background-position: -200% center; }
         }
         .text-kilau {
-          background: linear-gradient(110deg, #64748b 30%, #f59e0b 50%, #64748b 70%);
+          font-family: 'Montserrat', sans-serif;
+          background: linear-gradient(110deg, #64748b 20%, #ffffff 50%, #64748b 80%);
           background-size: 200% auto;
           color: transparent;
           -webkit-background-clip: text;
           background-clip: text;
-          animation: kilau-lambat 3s linear infinite;
+          animation: kilau-lambat 5s linear infinite;
         }
       </style>
     </head>
     <body class="text-gray-800 flex flex-col min-h-screen">
       
       <div class="bg-gray-900 text-gray-200 text-xs sm:text-sm px-4 py-2 flex flex-col sm:flex-row justify-between items-center shadow-lg border-b border-gray-800">
-        <div id="lokasiTeks" class="mb-1 sm:mb-0">Memuat lokasi...</div>
+        <div id="lokasiTeks" class="mb-1 sm:mb-0 cursor-pointer text-blue-300 hover:text-blue-100 transition" onclick="mintaLokasi()">
+          📍 Klik untuk mendeteksi lokasi...
+        </div>
         <div id="jamRealtime" class="font-mono font-bold text-blue-400 tracking-widest">00:00:00</div>
       </div>
 
       <div class="max-w-4xl mx-auto p-4 mt-8 flex-grow w-full">
         
         <div class="flex flex-col items-center mb-10">
-          <h1 class="text-4xl sm:text-5xl font-extrabold mb-2 text-center logo-keren drop-shadow-sm">HABI UNLIMITED MAIL</h1>
-          <p class="text-gray-500 mb-8 font-semibold tracking-wide uppercase text-sm">Layanan Email Sementara Premium</p>
+          <h1 class="text-4xl sm:text-5xl font-black mb-2 text-center logo-keren drop-shadow-sm tracking-tight">HABI UNLIMITED MAIL</h1>
+          <p class="text-gray-500 mb-8 font-semibold tracking-widest uppercase text-xs sm:text-sm">Layanan Email Sementara Premium</p>
           
           <div class="w-full max-w-xl glass-card p-6 sm:p-8 rounded-3xl shadow-xl">
             <div class="flex flex-col gap-4 mb-5">
@@ -118,13 +120,16 @@ export default {
             <h2 class="font-bold text-2xl text-gray-800 flex items-center gap-2">
               📥 Kotak Masuk
             </h2>
-            <span class="bg-blue-600 text-white rounded-full px-4 py-1.5 text-sm font-bold shadow-md" id="count">0</span>
+            <div class="flex items-center gap-3">
+              <span class="text-xs text-gray-400 animate-pulse">Live Sync 🟢</span>
+              <span class="bg-blue-600 text-white rounded-full px-4 py-1.5 text-sm font-bold shadow-md" id="count">0</span>
+            </div>
           </div>
           <div id="inbox" class="divide-y divide-gray-100 bg-white/40">
             <div class="p-16 text-center text-gray-500">
               <div class="text-5xl mb-4 opacity-30">📭</div>
               <p class="text-2xl mb-2 font-semibold text-gray-700">Kotak masuk kosong</p>
-              <p class="text-sm">Menunggu email masuk... (Otomatis terhapus dalam 24 Jam)</p>
+              <p class="text-sm">Menunggu email masuk... (Auto refresh 1 detik)</p>
             </div>
           </div>
         </div>
@@ -148,13 +153,13 @@ export default {
       </div>
 
       <footer class="mt-auto py-8 bg-gray-900 border-t-4 border-gray-800 text-center">
-        <p class="text-sm font-bold text-kilau tracking-wide uppercase">
-          Copyright &copy; <span id="tahun"></span> HABI UNLIMITED MAIL. All Rights Reserved.
+        <p class="text-sm font-black text-kilau tracking-wider">
+          COPYRIGHT &copy; <span id="tahun"></span> HABI UNLIMITED MAIL. ALL RIGHTS RESERVED.
         </p>
       </footer>
 
       <script>
-        // Data Nama
+        // Data Nama Cewek Jatim
         const namaDepan = ['siti', 'ayu', 'dewi', 'sri', 'indah', 'ratna', 'fitri', 'endang', 'tari', 'wulan', 'rina', 'putri', 'ning', 'yani', 'nisa', 'nurul', 'dwi', 'tri'];
         const namaBelakang = ['ningsih', 'wati', 'sari', 'astuti', 'rahayu', 'kusuma', 'lestari', 'susanti', 'wahyuni', 'maharani', 'agustin', 'purwanti'];
         
@@ -176,22 +181,17 @@ export default {
           }
         }
 
-        // Fungsi Generate Email dengan Sistem Penyimpanan Permanen (Anti-Reset saat di-refresh)
         function generateRandom(isManual = false) {
-          // Jika tidak dipencet manual & sudah ada email tersimpan, pakai yang lama
           if (!isManual && localStorage.getItem('habiTempEmail')) {
             document.getElementById('emailBox').value = localStorage.getItem('habiTempEmail');
             return;
           }
-          
-          // Buat email baru
           const d = namaDepan[Math.floor(Math.random() * namaDepan.length)];
           const b = namaBelakang[Math.floor(Math.random() * namaBelakang.length)];
           const angka = Math.floor(Math.random() * 9999);
           const emailBaru = d + '.' + b + angka + '@habisuno.my.id';
           
           document.getElementById('emailBox').value = emailBaru;
-          // Simpan permanen di HP
           localStorage.setItem('habiTempEmail', emailBaru);
         }
 
@@ -202,31 +202,57 @@ export default {
           navigator.clipboard.writeText(kotak.value);
         }
 
+        // FORMAT JAM MANUAL (ANTI ERROR)
         function updateWaktu() {
           const now = new Date();
-          const opsiJam = { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true };
-          document.getElementById('jamRealtime').innerText = now.toLocaleTimeString('id-ID', opsiJam).replace(/\./g, ':');
+          let h = now.getHours();
+          let m = now.getMinutes();
+          let s = now.getSeconds();
+          let ampm = h >= 12 ? 'PM' : 'AM';
+          
+          h = h % 12;
+          h = h ? h : 12; // 0 jam diubah ke 12
+          m = m < 10 ? '0' + m : m;
+          s = s < 10 ? '0' + s : s;
+          
+          document.getElementById('jamRealtime').innerText = h + ':' + m + ':' + s + ' ' + ampm;
           document.getElementById('tahun').innerText = now.getFullYear();
         }
 
-        function lacakLokasi() {
-          fetch('https://get.geojs.io/v1/ip/geo.json')
-            .then(res => res.json())
-            .then(data => {
-              const now = new Date();
-              const opsiTgl = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-              document.getElementById('lokasiTeks').innerText = now.toLocaleDateString('id-ID', opsiTgl) + " | " + data.city + ", " + data.region;
-            })
-            .catch(() => {
-              const now = new Date();
-              document.getElementById('lokasiTeks').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + " | Jember, Jawa Timur";
-            });
+        // SISTEM GPS AKURAT (MEMINTA IZIN BROWSER)
+        function mintaLokasi() {
+          document.getElementById('lokasiTeks').innerText = "Mendeteksi lokasi GPS...";
+          if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+              (position) => {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+                // Mengubah koordinat jadi nama kota gratis via OpenStreetMap
+                fetch(\`https://nominatim.openstreetmap.org/reverse?format=json&lat=\${lat}&lon=\${lon}\`)
+                  .then(res => res.json())
+                  .then(data => {
+                    const kota = data.address.city || data.address.town || data.address.regency || "Lokasi Ditemukan";
+                    const tgl = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                    document.getElementById('lokasiTeks').innerText = "📍 " + tgl + " | " + kota;
+                    document.getElementById('lokasiTeks').classList.replace('text-blue-300', 'text-green-400');
+                  })
+                  .catch(() => {
+                    document.getElementById('lokasiTeks').innerText = "📍 Titik GPS: " + lat.toFixed(2) + ", " + lon.toFixed(2);
+                  });
+              },
+              (error) => {
+                document.getElementById('lokasiTeks').innerText = "⚠️ Izin lokasi ditolak/gagal. (Klik untuk ulang)";
+              }
+            );
+          } else {
+            document.getElementById('lokasiTeks').innerText = "Browser tidak mendukung GPS.";
+          }
         }
 
         window.onload = () => {
           generateRandom();
           updateWaktu();
-          lacakLokasi();
+          mintaLokasi(); // Langsung otomatis minta izin lokasi saat web dibuka
           setInterval(updateWaktu, 1000);
           
           if(Notification.permission === "granted") {
@@ -236,6 +262,7 @@ export default {
           }
         };
 
+        // SISTEM AUTO REFRESH KOTAK MASUK (PER DETIK)
         async function muatPesan() {
           try {
             const res = await fetch('/api/pesan');
@@ -277,7 +304,7 @@ export default {
         }
         
         muatPesan();
-        setInterval(muatPesan, 1000);
+        setInterval(muatPesan, 1000); // 1000ms = 1 Detik Auto Refresh
       </script>
     </body>
     </html>`;
