@@ -23,22 +23,20 @@ export default {
         t: new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
       };
 
-      // MESIN BARU: Menyimpan dalam satu baris untuk menghindari limit 1000/hari
       let all = [];
       try { const ext = await e.DB.get("INBOX_HABI"); if(ext) all = JSON.parse(ext); } catch(err) {}
       
       const now = Date.now();
-      all = all.filter(msg => (now - parseInt(msg.id)) < 420000); // Buang yang lebih 7 Menit
-      all.unshift(d); // Taruh email baru di atas
+      all = all.filter(msg => (now - parseInt(msg.id)) < 420000); 
+      all.unshift(d); 
       
       await e.DB.put("INBOX_HABI", JSON.stringify(all));
-    } catch (fatal) { console.log("Gagal baca email", fatal); }
+    } catch (fatal) { console.log("Gagal", fatal); }
   },
 
   async fetch(req, env) {
     const u = new URL(req.url);
     
-    // API Tarik Pesan (Menggunakan GET limit 100.000/hari)
     if (u.pathname === "/api/pesan") {
       try {
         let all = [];
@@ -51,7 +49,6 @@ export default {
       } catch (err) { return new Response("[]", {headers: {'Content-Type': 'application/json'}}); }
     }
     
-    // API Hapus Manual
     if (u.pathname === "/api/del" && req.method === "POST") {
       try {
         const { id } = await req.json();
@@ -64,7 +61,6 @@ export default {
       } catch (err) { return new Response("Error"); }
     }
 
-    // Pendeteksi IP & ISP
     const ip = req.headers.get('cf-connecting-ip') || 'IP Tidak Terdeteksi';
     const isp = (req.cf && req.cf.asOrganization) ? req.cf.asOrganization : 'ISP Tidak Terdeteksi';
 
@@ -81,14 +77,13 @@ export default {
 "    .glass { background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(255,255,255,0.5); }\n" +
 "    .font-google { font-family: 'Product Sans', Arial, sans-serif; font-weight: 700; letter-spacing: -2px; }\n" +
 "    .font-estetik { font-family: 'Playfair Display', serif; }\n" +
-"    \n" +
 "    .logo-container { display: inline-block; -webkit-mask-image: linear-gradient(-75deg, rgba(0,0,0,1) 30%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,1) 70%); -webkit-mask-size: 200%; animation: shine-logo 7s ease-in-out 1 forwards; }\n" +
 "    @keyframes shine-logo { 0% { -webkit-mask-position: 200%; } 100% { -webkit-mask-position: -200%; } }\n" +
-"    \n" +
 "    .kilau-footer { background: linear-gradient(110deg, #64748b 40%, #ffffff 50%, #64748b 60%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; animation: shine-logo 4s linear infinite; }\n" +
-"    \n" +
 "    .badge-new { animation: pulse 1.5s infinite; }\n" +
 "    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }\n" +
+"    .pop-up-anim { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }\n" +
+"    @keyframes popIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }\n" +
 "  </style>\n" +
 "</head>\n" +
 "<body class='min-h-screen flex flex-col'>\n" +
@@ -115,7 +110,7 @@ export default {
 "    <div class='glass p-8 rounded-3xl shadow-xl mb-8 border-t-4 border-blue-500'>\n" +
 "      <input type='text' id='em' class='w-full p-4 rounded-xl border-2 border-blue-100 text-center bg-gray-50 text-blue-700 font-bold mb-4' readonly>\n" +
 "      <div class='flex flex-col gap-3'>\n" +
-"        <button onclick='sl()' class='w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md active:scale-95 uppercase text-sm'>Salin Alamat Email 📋</button>\n" +
+"        <button onclick='salinEmail()' class='w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-md active:scale-95 uppercase text-sm transition'>Salin Alamat Email 📋</button>\n" +
 "        <button onclick='gr(true)' class='w-full bg-white border-2 border-red-500 text-red-500 font-bold py-3 rounded-xl active:scale-95 uppercase text-xs hover:bg-red-50 transition'>Ganti Nama (Cewek Jatim)</button>\n" +
 "      </div>\n" +
 "    </div>\n" +
@@ -150,6 +145,25 @@ export default {
 "    </div>\n" +
 "  </div>\n" +
 "\n" +
+"  \n" +
+"  <div id='modalSalin' class='fixed inset-0 bg-gray-900/60 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-all duration-300'>\n" +
+"    <div class='glass p-8 rounded-[2rem] shadow-2xl max-w-xs w-full text-center mx-4 pop-up-anim border-t-4 border-blue-500'>\n" +
+"      <div class='w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 border-4 border-white shadow-md'>\n" +
+"        <span class='text-3xl'>📋</span>\n" +
+"      </div>\n" +
+"      <h3 class='text-xl font-bold text-gray-800 mb-2'>Tersalin Sempurna!</h3>\n" +
+"      <p class='text-xs text-gray-600 mb-6 font-medium leading-relaxed'>Alamat email sementara Anda siap beraksi. Gunakan untuk mendaftar akun tanpa takut spam menghantui.</p>\n" +
+"      <div class='relative inline-block w-full mb-4'>\n" +
+"         <span class='absolute -top-3 -right-2 bg-red-500 text-white text-[9px] font-black px-2 py-1 rounded-full badge-new border-2 border-white z-10'>NEW</span>\n" +
+"         <a href='https://wa.me/6285119821813' target='_blank' class='w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-lg flex items-center justify-center gap-2 text-xs uppercase tracking-widest transition'>\n" +
+"           <svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='currentColor' viewBox='0 0 16 16'><path d='M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z'/></svg>\n" +
+"           Chat Habi Mail\n" +
+"         </a>\n" +
+"      </div>\n" +
+"      <button onclick='tutupModal()' class='w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl text-xs uppercase tracking-widest transition'>Tutup</button>\n" +
+"    </div>\n" +
+"  </div>\n" +
+"\n" +
 "  <footer class='mt-auto py-8 bg-gray-900 text-center shadow-inner'>\n" +
 "    <p class='text-[10px] font-bold tracking-[0.4em] uppercase kilau-footer'>Copyright &copy; 2026 HABI MAIL UNLIMITED. All Rights Reserved.</p>\n" +
 "  </footer>\n" +
@@ -159,9 +173,19 @@ export default {
 "    const nB=['Maharani','Larasati','Widya','Puspa','Kirani','Azzahra','Maheswari','Kusuma','Anggraini'];\n" +
 "    let lc=0; let curMsgs=[];\n" +
 "    function gr(m=false){if(!m&&localStorage.getItem('he')){document.getElementById('em').value=localStorage.getItem('he');return;}const e=nD[Math.floor(Math.random()*nD.length)]+'.'+nB[Math.floor(Math.random()*nB.length)]+Math.floor(Math.random()*999)+'@habisuno.my.id';document.getElementById('em').value=e;localStorage.setItem('he',e);}\n" +
-"    function sl(){navigator.clipboard.writeText(document.getElementById('em').value);alert('Email disalin!');}\n" +
+"    \n" +
+"    // Logika Pop Up Custom\n" +
+"    function salinEmail(){\n" +
+"      navigator.clipboard.writeText(document.getElementById('em').value);\n" +
+"      document.getElementById('modalSalin').classList.remove('hidden');\n" +
+"    }\n" +
+"    function tutupModal() {\n" +
+"      document.getElementById('modalSalin').classList.add('hidden');\n" +
+"    }\n" +
+"\n" +
 "    async function hp(id){if(!confirm('Hapus pesan ini?'))return;await fetch('/api/del',{method:'POST',body:JSON.stringify({id})}); chk();}\n" +
 "    \n" +
+"    // Auto-Sync 5 Detik Sekali Agar Bebas Limit Server & 0 Error\n" +
 "    async function chk() {\n" +
 "      try {\n" +
 "        const r = await fetch('/api/pesan?_=' + new Date().getTime()); const d = await r.json();\n" +
@@ -227,7 +251,7 @@ export default {
 "        document.getElementById('waktuLengkap').innerText = hri[n.getDay()] + ', ' + n.getDate() + ' ' + bln[n.getMonth()] + ' ' + n.getFullYear() + ' | ' + n.toLocaleTimeString('id-ID', {hour12:true}).replace(/\\./g,':'); \n" +
 "        renderMsgs(); \n" +
 "      }, 1000); \n" +
-"      setInterval(chk, 3000);\n" +
+"      setInterval(chk, 5000); // Tarik email tiap 5 detik agar server 0 error\n" +
 "    };\n" +
 "  </script>\n" +
 "</body>\n" +
