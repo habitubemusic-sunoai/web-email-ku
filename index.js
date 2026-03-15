@@ -1,33 +1,70 @@
 export default {
   async email(m, e) {
-    let r = "";
-    const rd = m.raw.getReader();
-    while (true) { const { done, value } = await rd.read(); if (done) break; r += new TextDecoder().decode(value); }
-    let b = r.includes("Content-Type: text/plain") ? r.split("Content-Type: text/plain")[1].split("--")[0].trim() : "Format pesan tidak didukung sepenuhnya.";
-    const d = {
-      id: Date.now().toString(),
-      f: m.from || "Sistem",
-      s: m.headers.get("subject") || "Tanpa Judul",
-      b: b || "Isi Kosong",
-      t: new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
-    };
-    await e.DB.put(d.id, JSON.stringify(d), { expirationTtl: 420 }); // Auto hapus 420 detik (7 Menit)
+    try {
+      let r = "";
+      const rd = m.raw.getReader();
+      while (true) { const { done, value } = await rd.read(); if (done) break; r += new TextDecoder().decode(value); }
+      
+      let b = "Format pesan HTML/Kompleks.";
+      try {
+        if (r.includes("Content-Type: text/plain")) {
+          let parts = r.split("Content-Type: text/plain");
+          if (parts.length > 1) b = parts[1].split("--")[0].trim();
+        } else if (r.includes("\r\n\r\n")) {
+          b = r.split("\r\n\r\n").slice(1).join("\n").substring(0, 1000).trim();
+        }
+      } catch (err) {}
+
+      const d = {
+        id: Date.now().toString(),
+        f: m.from || "Sistem",
+        s: m.headers.get("subject") || "Tanpa Judul",
+        b: b,
+        t: new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta", weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })
+      };
+
+      // MESIN BARU: Menyimpan dalam satu baris untuk menghindari limit 1000/hari
+      let all = [];
+      try { const ext = await e.DB.get("INBOX_HABI"); if(ext) all = JSON.parse(ext); } catch(err) {}
+      
+      const now = Date.now();
+      all = all.filter(msg => (now - parseInt(msg.id)) < 420000); // Buang yang lebih 7 Menit
+      all.unshift(d); // Taruh email baru di atas
+      
+      await e.DB.put("INBOX_HABI", JSON.stringify(all));
+    } catch (fatal) { console.log("Gagal baca email", fatal); }
   },
 
   async fetch(req, env) {
     const u = new URL(req.url);
+    
+    // API Tarik Pesan (Menggunakan GET limit 100.000/hari)
     if (u.pathname === "/api/pesan") {
-      const { keys } = await env.DB.list();
-      let ems = [];
-      for (let k of keys) { const v = await env.DB.get(k.name); if (v) { try { ems.push(JSON.parse(v)); } catch(err) {} } }
-      return new Response(JSON.stringify(ems.sort(function(a,b){return b.id - a.id})), {headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
+      try {
+        let all = [];
+        const ext = await env.DB.get("INBOX_HABI");
+        if(ext) all = JSON.parse(ext);
+        
+        const now = Date.now();
+        all = all.filter(msg => (now - parseInt(msg.id)) < 420000);
+        return new Response(JSON.stringify(all), {headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
+      } catch (err) { return new Response("[]", {headers: {'Content-Type': 'application/json'}}); }
     }
+    
+    // API Hapus Manual
     if (u.pathname === "/api/del" && req.method === "POST") {
-      const { id } = await req.json();
-      await env.DB.delete(id);
-      return new Response("OK");
+      try {
+        const { id } = await req.json();
+        let all = [];
+        const ext = await env.DB.get("INBOX_HABI");
+        if(ext) all = JSON.parse(ext);
+        all = all.filter(msg => msg.id !== id);
+        await env.DB.put("INBOX_HABI", JSON.stringify(all));
+        return new Response("OK");
+      } catch (err) { return new Response("Error"); }
     }
 
+    // Pendeteksi IP & ISP
     const ip = req.headers.get('cf-connecting-ip') || 'IP Tidak Terdeteksi';
     const isp = (req.cf && req.cf.asOrganization) ? req.cf.asOrganization : 'ISP Tidak Terdeteksi';
 
@@ -45,11 +82,9 @@ export default {
 "    .font-google { font-family: 'Product Sans', Arial, sans-serif; font-weight: 700; letter-spacing: -2px; }\n" +
 "    .font-estetik { font-family: 'Playfair Display', serif; }\n" +
 "    \n" +
-"    /* Kilauan Logo 7 Detik */\n" +
 "    .logo-container { display: inline-block; -webkit-mask-image: linear-gradient(-75deg, rgba(0,0,0,1) 30%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,1) 70%); -webkit-mask-size: 200%; animation: shine-logo 7s ease-in-out 1 forwards; }\n" +
 "    @keyframes shine-logo { 0% { -webkit-mask-position: 200%; } 100% { -webkit-mask-position: -200%; } }\n" +
 "    \n" +
-"    /* Kilauan Copyright 4 Detik Tak Terbatas */\n" +
 "    .kilau-footer { background: linear-gradient(110deg, #64748b 40%, #ffffff 50%, #64748b 60%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; animation: shine-logo 4s linear infinite; }\n" +
 "    \n" +
 "    .badge-new { animation: pulse 1.5s infinite; }\n" +
@@ -98,7 +133,6 @@ export default {
 "      </div>\n" +
 "    </div>\n" +
 "\n" +
-"    \n" +
 "    <div class='glass rounded-3xl p-8 text-center shadow-lg border-t-4 border-green-500 mb-10'>\n" +
 "      <h3 class='text-2xl font-extrabold mb-4 text-gray-800 font-estetik'>Definisi Kebebasan Tanpa Batas</h3>\n" +
 "      <p class='text-sm text-gray-600 mb-8 leading-relaxed font-medium'>\n" +
@@ -116,7 +150,6 @@ export default {
 "    </div>\n" +
 "  </div>\n" +
 "\n" +
-"  \n" +
 "  <footer class='mt-auto py-8 bg-gray-900 text-center shadow-inner'>\n" +
 "    <p class='text-[10px] font-bold tracking-[0.4em] uppercase kilau-footer'>Copyright &copy; 2026 HABI MAIL UNLIMITED. All Rights Reserved.</p>\n" +
 "  </footer>\n" +
@@ -132,8 +165,7 @@ export default {
 "    async function chk() {\n" +
 "      try {\n" +
 "        const r = await fetch('/api/pesan?_=' + new Date().getTime()); const d = await r.json();\n" +
-"        curMsgs = d;\n" +
-"        renderMsgs();\n" +
+"        curMsgs = d; renderMsgs();\n" +
 "      } catch (e) {}\n" +
 "    }\n" +
 "\n" +
@@ -143,16 +175,17 @@ export default {
 "      document.getElementById('ct').innerText = validMsgs.length;\n" +
 "      if(validMsgs.length === 0){ document.getElementById('ib').innerHTML='<p class=\"text-center text-gray-400 py-10 text-xs\">Kotak masuk kosong. Menunggu pesan...</p>'; return; }\n" +
 "      \n" +
-"      document.getElementById('ib').innerHTML = validMsgs.map(function(p) {\n" +
+"      document.getElementById('ib').innerHTML = validMsgs.map(function(p, i) {\n" +
 "        let age = Math.floor((now - parseInt(p.id)) / 1000);\n" +
 "        let left = 420 - age;\n" +
 "        let min = Math.floor(left / 60);\n" +
 "        let sec = left % 60;\n" +
 "        let timeStr = '0' + min + ':' + (sec < 10 ? '0'+sec : sec);\n" +
+"        let nw = i === 0 ? '<span class=\"bg-red-500 text-white text-[8px] px-2 py-0.5 rounded font-bold anim-pulse\">NEW</span>' : '';\n" +
 "        \n" +
 "        return '<div class=\"bg-white p-5 rounded-2xl border border-gray-200 shadow-sm relative transition-all\">' +\n" +
 "          '<div class=\"flex justify-between items-center mb-3\">' +\n" +
-"             '<div class=\"text-[9px] font-bold text-blue-500 uppercase\">' + p.t + '</div>' +\n" +
+"             '<div class=\"text-[9px] font-bold text-blue-500 uppercase tracking-widest\">' + p.t + '</div>' + nw +\n" +
 "          '</div>' +\n" +
 "          '<div class=\"font-bold text-gray-900 text-sm mb-1\">' + p.s + '</div>' +\n" +
 "          '<div class=\"text-[10px] text-gray-500 mb-3\">Dari: <b>' + p.f + '</b></div>' +\n" +
