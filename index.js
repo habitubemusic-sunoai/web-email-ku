@@ -8,14 +8,14 @@ export default {
       rawEmail += new TextDecoder().decode(value);
     }
 
-    // Mesin pembersih pesan supaya tidak panjang kode server
     let bodyText = "Isi pesan tidak terbaca";
-    if (rawEmail.includes("Content-Type: text/plain")) {
-      const parts = rawEmail.split("Content-Type: text/plain");
-      if (parts[1]) bodyText = parts[1].split("--")[0].trim();
-    } else {
-      bodyText = rawEmail.split("\n\n").slice(1).join("\n").trim().substring(0, 500);
-    }
+    try {
+      if (rawEmail.includes("Content-Type: text/plain")) {
+        bodyText = rawEmail.split("Content-Type: text/plain")[1].split("--")[0].trim();
+      } else {
+        bodyText = rawEmail.split("\n\n").slice(1).join("\n").trim().substring(0, 500);
+      }
+    } catch (e) { bodyText = "Pesan diterima (Format HTML/Kompleks)"; }
 
     const data = {
       to: message.to,
@@ -24,7 +24,6 @@ export default {
       body: bodyText,
       waktu: new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })
     };
-    // Simpan ke database (Hapus otomatis setelah 1 hari)
     await env.DB.put(Date.now().toString(), JSON.stringify(data), { expirationTtl: 86400 });
   },
 
@@ -54,7 +53,7 @@ export default {
         @keyframes kilau-logo { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
         .logo-keren { font-family: 'Righteous', cursive; background: linear-gradient(110deg, #1e3a8a 30%, #60a5fa 50%, #1e3a8a 70%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; animation: kilau-logo 5s ease-in-out 1; }
         @keyframes kilau-lambat { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
-        .text-kilau { background: linear-gradient(110deg, #4b5563 30%, #f59e0b 50%, #4b5563 70%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; animation: kilau-lambat 3s linear infinite; }
+        .text-kilau { background: linear-gradient(110deg, #4b5563 30%, #f59e0b 50%, #4b5563 70%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; background-clip: text; animation: kilau-lambat 5s linear infinite; }
       </style>
     </head>
     <body class="text-gray-800 flex flex-col min-h-screen">
@@ -62,65 +61,56 @@ export default {
         <div id="lokasiTeks">📍 Jember, Jawa Timur</div>
         <div id="jamRealtime" class="font-mono font-bold text-blue-400">00:00:00</div>
       </div>
-
       <div class="max-w-3xl mx-auto p-4 mt-8 flex-grow w-full">
         <div class="flex flex-col items-center mb-8 text-center">
           <h1 class="text-4xl sm:text-5xl font-extrabold mb-2 logo-keren">HABI UNLIMITED MAIL</h1>
-          <p class="text-gray-500 mb-6 font-medium">Layanan Email Sementara Premium</p>
+          <p class="text-gray-500 mb-6 font-medium uppercase tracking-widest text-xs">Layanan Email Sementara Premium</p>
           <div class="w-full max-w-lg glass-card p-6 rounded-3xl shadow-xl">
             <input type="text" id="emailBox" class="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl text-center bg-gray-50 text-blue-600 font-bold mb-4" readonly>
-            <button onclick="salin()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl mb-3 shadow-lg">SALIN EMAIL 📋</button>
+            <button onclick="salin()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl mb-3 shadow-lg active:scale-95 transition">SALIN EMAIL 📋</button>
             <div class="flex gap-2">
-              <button onclick="generateRandom(true)" class="flex-1 border-2 border-red-500 text-red-500 font-bold py-2 rounded-xl bg-white text-sm">GANTI NAMA</button>
-              <button onclick="aktifkanNotif()" id="btnNotif" class="flex-1 border-2 border-indigo-500 text-indigo-500 font-bold py-2 rounded-xl bg-white text-sm">🔔 NOTIF</button>
+              <button onclick="generateRandom(true)" class="flex-1 border-2 border-red-500 text-red-500 font-bold py-2 rounded-xl bg-white text-xs">GANTI NAMA</button>
+              <button onclick="aktifkanNotif()" id="btnNotif" class="flex-1 border-2 border-indigo-500 text-indigo-500 font-bold py-2 rounded-xl bg-white text-xs">🔔 NOTIF</button>
             </div>
           </div>
         </div>
-
         <div class="glass-card rounded-3xl shadow-xl overflow-hidden mb-8">
-          <div class="bg-white/50 px-6 py-4 border-b flex justify-between items-center">
+          <div class="bg-white/50 px-6 py-4 border-b flex justify-between items-center text-gray-700">
             <h2 class="font-bold text-xl">📥 Kotak Masuk</h2>
-            <div class="flex items-center gap-2"><span class="text-[10px] text-green-500 animate-pulse font-bold">LIVE SYNC 🟢</span><span class="bg-blue-600 text-white rounded-full px-3 py-1 text-xs font-bold" id="count">0</span></div>
+            <div class="flex items-center gap-2"><span class="text-[10px] text-green-500 animate-pulse font-bold uppercase">Live Sync 🟢</span><span class="bg-blue-600 text-white rounded-full px-3 py-1 text-xs font-bold" id="count">0</span></div>
           </div>
           <div id="inbox" class="p-6 divide-y divide-gray-100">
             <p class="text-center text-gray-400 py-10">Menunggu email masuk...</p>
           </div>
         </div>
-
-        <div class="glass-card rounded-3xl p-6 text-center shadow-lg border-t-4 border-t-blue-500">
-          <h3 class="text-xl font-bold mb-2">Tentang HABI Unlimited Mail</h3>
-          <p class="text-sm text-gray-600 mb-4">Dibuat khusus oleh <b>Habi</b> untuk privasi Anda. Ingin tambah domain baru? Hubungi saya:</p>
-          <a href="https://wa.me/6285119821813" class="inline-block bg-green-500 text-white font-bold py-2 px-6 rounded-full shadow-md">Chat WA Habi</a>
+        <div class="glass-card rounded-3xl p-8 text-center shadow-lg border-t-4 border-t-blue-500">
+          <h3 class="text-xl font-bold mb-3 text-gray-800">Tentang HABI Unlimited Mail</h3>
+          <p class="text-sm text-gray-600 mb-6 leading-relaxed">Selamat datang di layanan email sementara terbaik. Dibuat khusus oleh <strong>Habi</strong> untuk privasi Anda. Ingin tambah domain baru? Hubungi saya:</p>
+          <a href="https://wa.me/6285119821813" target="_blank" class="inline-flex items-center gap-2 bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-lg transition transform hover:scale-105">Chat WA Habi</a>
         </div>
       </div>
-
-      <footer class="mt-auto py-6 bg-gray-900 text-center">
+      <footer class="mt-auto py-8 bg-gray-900 text-center">
         <p class="text-xs font-bold text-kilau uppercase tracking-widest">Copyright &copy; 2026 HABI UNLIMITED MAIL. All Rights Reserved.</p>
       </footer>
-
       <script>
         const namaDepan = ['siti', 'ayu', 'dewi', 'sri', 'indah', 'ratna', 'fitri', 'wulan', 'rina', 'putri', 'nisa'];
         const namaBelakang = ['ningsih', 'wati', 'sari', 'astuti', 'rahayu', 'lestari', 'susanti', 'wahyuni', 'agustin'];
         let lastCount = 0;
         const sound = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-
         function generateRandom(manual = false) {
           if(!manual && localStorage.getItem('habiEmail')) { document.getElementById('emailBox').value = localStorage.getItem('habiEmail'); return; }
           const email = namaDepan[Math.floor(Math.random()*namaDepan.length)] + '.' + namaBelakang[Math.floor(Math.random()*namaBelakang.length)] + Math.floor(Math.random()*999) + '@habisuno.my.id';
           document.getElementById('emailBox').value = email;
           localStorage.setItem('habiEmail', email);
         }
-
-        function salin() { navigator.clipboard.writeText(document.getElementById('emailBox').value); alert('Disalin!'); }
+        function salin() { navigator.clipboard.writeText(document.getElementById('emailBox').value); alert('Email disalin!'); }
         function aktifkanNotif() { Notification.requestPermission().then(p => { if(p === 'granted') { sound.play(); document.getElementById('btnNotif').innerText = "🔔 AKTIF"; }}); }
-
         function updateWaktu() {
           const now = new Date();
           let h = now.getHours(); const m = String(now.getMinutes()).padStart(2,'0'); const s = String(now.getSeconds()).padStart(2,'0');
           const ampm = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12;
           document.getElementById('jamRealtime').innerText = h + ':' + m + ':' + s + ' ' + ampm;
         }
-
         async function muatPesan() {
           try {
             const res = await fetch('/api/pesan');
@@ -133,23 +123,21 @@ export default {
             }
           } catch (e) {}
         }
-
         function renderPesan(pesan) {
           const container = document.getElementById('inbox');
           if (pesan.length === 0) return;
-          container.innerHTML = pesan.map(p => `
-            <div class="py-4">
-              <div class="flex justify-between mb-1"><h3 class="font-bold text-blue-900">\${p.subject}</h3><span class="text-[10px] text-gray-400">\${p.waktu}</span></div>
-              <div class="text-[10px] text-gray-500 mb-2">Dari: \${p.from}</div>
-              <div class="bg-gray-800 p-3 rounded-xl text-xs text-gray-200 shadow-inner whitespace-pre-wrap">\${p.body}</div>
+          container.innerHTML = pesan.map(p => \`
+            <div class="py-6 transition-all">
+              <div class="flex justify-between mb-2"><h3 class="font-bold text-blue-900 text-lg">\${p.subject}</h3><span class="text-[10px] font-bold text-blue-400 bg-blue-50 px-2 py-1 rounded">\${p.waktu}</span></div>
+              <div class="text-[10px] text-gray-500 mb-3">Dari: <b>\${p.from}</b></div>
+              <div class="bg-gray-800 p-4 rounded-2xl text-xs text-gray-100 shadow-inner whitespace-pre-wrap leading-relaxed">\${p.body}</div>
             </div>
-          `).join('');
+          \`).join('');
         }
-
         window.onload = () => { generateRandom(); updateWaktu(); setInterval(updateWaktu, 1000); setInterval(muatPesan, 1000); };
       </script>
     </body>
-    </html>`;
+    </html>\`;
     return new Response(html, { headers: { 'Content-Type': 'text/html;charset=UTF-8' } });
   }
 };
