@@ -1,6 +1,3 @@
--8' } });
-  }
-};
 export default {
   async email(message, env) {
     let rawEmail = "";
@@ -11,17 +8,24 @@ export default {
       rawEmail += new TextDecoder().decode(value);
     }
 
-    // Membersihkan body email dari header sampah agar langsung ke isi
+    // Membersihkan isi email agar hanya pesan intinya saja
     let cleanBody = rawEmail;
-    if (rawEmail.includes("Content-Type: text/plain")) {
-      cleanBody = rawEmail.split("Content-Type: text/plain")[1].split("--")[0].split("\\n\\n").slice(1).join("\\n").trim();
+    try {
+      if (rawEmail.includes("Content-Type: text/plain")) {
+        let parts = rawEmail.split("Content-Type: text/plain");
+        if (parts[1]) {
+          cleanBody = parts[1].split("--")[0].trim();
+        }
+      }
+    } catch (e) {
+      cleanBody = "Pesan diterima (Format Kompleks)";
     }
 
     const data = {
       to: message.to,
       from: message.from,
       subject: message.headers.get("subject") || "Tanpa Judul",
-      body: cleanBody || "Isi pesan tidak terbaca (Format HTML)",
+      body: cleanBody,
       waktu: new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })
     };
     await env.DB.put(Date.now().toString(), JSON.stringify(data), { expirationTtl: 86400 });
@@ -55,7 +59,7 @@ export default {
       </style>
     </head>
     <body class="min-h-screen flex flex-col">
-      <div class="bg-gray-900 text-blue-400 p-2 text-center text-xs font-bold tracking-widest shadow-lg" id="topInfo">MEMUAT SISTEM...</div>
+      <div class="bg-gray-900 text-blue-400 p-2 text-center text-[10px] font-bold tracking-widest shadow-lg" id="topInfo">SISTEM AKTIF | MEMUAT DATA...</div>
 
       <div class="max-w-2xl mx-auto p-4 w-full flex-grow mt-6">
         <div class="text-center mb-8">
@@ -64,34 +68,34 @@ export default {
         </div>
 
         <div class="glass-card p-6 rounded-3xl shadow-xl mb-6">
-          <input type="text" id="emailBox" class="w-full p-4 rounded-2xl bg-white border-2 border-blue-100 text-center font-bold text-blue-700 mb-4 shadow-inner" readonly>
+          <input type="text" id="emailBox" class="w-full p-4 rounded-2xl bg-white border-2 border-blue-100 text-center font-bold text-blue-700 mb-4" readonly>
           <div class="flex gap-2">
             <button onclick="salin()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition">SALIN</button>
-            <button onclick="generateRandom(true)" class="flex-1 border-2 border-red-400 text-red-500 font-bold py-3 rounded-xl active:scale-95 transition">ACAK</button>
+            <button onclick="generateRandom(true)" class="flex-1 border-2 border-red-400 text-red-500 font-bold py-3 rounded-xl active:scale-95 transition text-sm">ACAK NAMA</button>
           </div>
-          <button onclick="aktifkanNotif()" id="btnNotif" class="w-full mt-3 py-2 text-xs font-bold text-indigo-500 border border-indigo-200 rounded-lg">AKTIFKAN NOTIFIKASI SUARA & HP 🔔</button>
+          <button onclick="aktifkanNotif()" id="btnNotif" class="w-full mt-3 py-2 text-[10px] font-bold text-indigo-500 border border-indigo-200 rounded-lg">🔔 AKTIFKAN NOTIFIKASI & SUARA</button>
         </div>
 
         <div class="glass-card rounded-3xl shadow-xl overflow-hidden">
           <div class="p-4 bg-white/50 border-b flex justify-between items-center text-gray-700">
-            <h2 class="font-bold flex items-center gap-2">📥 KOTAK MASUK <span class="text-[10px] text-green-500 animate-pulse">LIVE Sync 🟢</span></h2>
-            <span id="count" class="bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-bold">0</span>
+            <h2 class="font-bold text-sm flex items-center gap-2">📥 KOTAK MASUK <span class="text-[10px] text-green-500 animate-pulse">LIVE 🟢</span></h2>
+            <span id="count" class="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-bold">0</span>
           </div>
           <div id="inbox" class="p-4 space-y-4">
-            <p class="text-center text-gray-400 text-sm py-10">Menunggu pesan masuk...</p>
+            <p class="text-center text-gray-400 text-xs py-10 tracking-widest">Menunggu pesan masuk...</p>
           </div>
         </div>
       </div>
 
-      <footer class="p-6 text-center text-[10px] font-bold text-gray-400 tracking-widest">
-        DIBUAT OLEH HABI MAIL UNLIMITED &copy; <span id="thn"></span>
+      <footer class="p-6 text-center text-[9px] font-bold text-gray-400 tracking-widest uppercase">
+        Dibuat Oleh Habi Mail Unlimited &copy; 2026
       </footer>
 
       <script>
         const namaDepan = ['siti', 'ayu', 'dewi', 'sri', 'indah', 'ratna', 'fitri', 'nisa', 'nurul', 'putri', 'wulan', 'rina'];
         const namaBelakang = ['ningsih', 'wati', 'sari', 'astuti', 'rahayu', 'lestari', 'susanti', 'wahyuni', 'agustin'];
         let lastCount = 0;
-        const beep = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'); // Suara Ding Pendek
+        const beep = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
 
         function generateRandom(manual = false) {
           if(!manual && localStorage.getItem('habiEmail')) { document.getElementById('emailBox').value = localStorage.getItem('habiEmail'); return; }
@@ -115,9 +119,9 @@ export default {
             if (data.length > lastCount) {
               const baru = data[0];
               if (lastCount !== 0) {
-                beep.play();
+                beep.play().catch(e => {});
                 if (Notification.permission === 'granted') {
-                  new Notification("HABI MAIL: Pesan Baru!", { body: "Dari: " + baru.from + "\\nSubjek: " + baru.subject });
+                  new Notification("HABI MAIL: Pesan Baru!", { body: "Dari: " + baru.from });
                 }
               }
               lastCount = data.length;
@@ -130,24 +134,25 @@ export default {
           const container = document.getElementById('inbox');
           if (pesan.length === 0) return;
           container.innerHTML = pesan.map(p => \`
-            <div class="bg-white p-4 rounded-2xl border border-blue-50 shadow-sm transition-all animate-fade-in">
+            <div class="bg-white p-4 rounded-2xl border border-blue-50 shadow-sm transition-all">
               <div class="flex justify-between items-start mb-2">
-                <div class="font-bold text-blue-900 text-sm">\${p.subject}</div>
-                <div class="text-[9px] text-gray-400 font-bold bg-gray-50 px-2 py-1 rounded">\${p.waktu}</div>
+                <div class="font-bold text-blue-900 text-xs">\${p.subject}</div>
+                <div class="text-[8px] text-gray-400 font-bold bg-gray-50 px-2 py-1 rounded">\${p.waktu}</div>
               </div>
-              <div class="text-[10px] text-gray-500 mb-3">Dari: <b>\${p.from}</b></div>
-              <div class="text-xs text-gray-700 bg-blue-50/50 p-3 rounded-xl border border-blue-100/50 leading-relaxed">\${p.body}</div>
+              <div class="text-[9px] text-gray-500 mb-3">Dari: <b>\${p.from}</b></div>
+              <div class="text-[11px] text-gray-700 bg-blue-50/50 p-3 rounded-xl border border-blue-100/50 leading-relaxed whitespace-pre-wrap">\${p.body}</div>
             </div>
           \`).join('');
         }
 
         window.onload = () => {
           generateRandom();
-          document.getElementById('thn').innerText = new Date().getFullYear();
-          navigator.geolocation.getCurrentPosition(p => {
-             document.getElementById('topInfo').innerText = "JEMBER, JAWA TIMUR | " + new Date().toLocaleTimeString();
-          });
-          setInterval(cekPesan, 1000); // CEK SETIAP DETIK
+          setInterval(cekPesan, 1000);
+          if (navigator.geolocation) {
+             navigator.geolocation.getCurrentPosition(p => {
+                document.getElementById('topInfo').innerText = "JEMBER, JAWA TIMUR | LIVE SYNC ACTIVE";
+             });
+          }
         }
       </script>
     </body>
