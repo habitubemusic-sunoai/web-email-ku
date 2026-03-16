@@ -45,6 +45,7 @@ export default {
   async fetch(req, env) {
     const u = new URL(req.url);
     
+    // API Tarik Pesan
     if (u.pathname === "/api/pesan") {
       try {
         let all = [];
@@ -56,6 +57,7 @@ export default {
       } catch (err) { return new Response("[]", {headers: {'Content-Type': 'application/json'}}); }
     }
     
+    // API Hapus Pesan
     if (u.pathname === "/api/del" && req.method === "POST") {
       try {
         const { id } = await req.json();
@@ -68,21 +70,24 @@ export default {
       } catch (err) { return new Response("Error"); }
     }
 
-    // API DOMAIN GLOBAL UNTUK SEMUA PENGGUNA
+    // API SINKRONISASI DOMAIN GLOBAL UNTUK SEMUA HP
     if (u.pathname === "/api/domains" && req.method === "GET") {
       try {
-        let doms = [{d: "habisuno.my.id", t: "Bawaan Sistem Master", locked: true}];
-        const ext = await env.DB.get("DOMAINS_HABI_GLOBAL");
-        if(ext) { let parsed = JSON.parse(ext); if(Array.isArray(parsed) && parsed.length > 0) doms = parsed; }
+        let doms = [{d: "habisuno.my.id", t: "Bawaan Sistem Master", locked: true, ts: 0, isNew: false}];
+        const ext = await env.DB.get("DOMAINS_GLOBAL");
+        if(ext) { 
+           let parsed = JSON.parse(ext); 
+           if(Array.isArray(parsed) && parsed.length > 0) doms = parsed; 
+        }
         return new Response(JSON.stringify(doms), {headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
-      } catch(err) { return new Response(JSON.stringify([{d: "habisuno.my.id", t: "Bawaan Sistem Master", locked: true}]), {headers: {'Content-Type': 'application/json'}}); }
+      } catch(err) { return new Response("[]", {headers: {'Content-Type': 'application/json'}}); }
     }
 
     if (u.pathname === "/api/domains" && req.method === "POST") {
       try {
         const body = await req.json();
-        let doms = [{d: "habisuno.my.id", t: "Bawaan Sistem Master", locked: true}];
-        const ext = await env.DB.get("DOMAINS_HABI_GLOBAL");
+        let doms = [{d: "habisuno.my.id", t: "Bawaan Sistem Master", locked: true, ts: 0, isNew: false}];
+        const ext = await env.DB.get("DOMAINS_GLOBAL");
         if(ext) { let parsed = JSON.parse(ext); if(Array.isArray(parsed) && parsed.length > 0) doms = parsed; }
         
         if (body.action === "add" && body.domain) {
@@ -92,7 +97,7 @@ export default {
         } else if (body.action === "del" && body.domain && body.domain !== "habisuno.my.id") {
           doms = doms.filter(x => x.d !== body.domain);
         }
-        await env.DB.put("DOMAINS_HABI_GLOBAL", JSON.stringify(doms));
+        await env.DB.put("DOMAINS_GLOBAL", JSON.stringify(doms));
         return new Response("OK");
       } catch (err) { return new Response("Error"); }
     }
@@ -119,9 +124,15 @@ export default {
 "    .splash-logo { animation: splash-pulse 1.5s ease-in-out infinite alternate; }\n" +
 "    @keyframes splash-pulse { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }\n" +
 "    \n" +
-"    /* KILAUAN LOGO 7 DETIK 1X SAJA */\n" +
-"    .logo-container { display: inline-block; -webkit-mask-image: linear-gradient(-75deg, rgba(0,0,0,1) 40%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,1) 60%); -webkit-mask-size: 300%; animation: shine-logo 7s ease-in-out 1 forwards; }\n" +
-"    @keyframes shine-logo { 0% { -webkit-mask-position: 200%; } 100% { -webkit-mask-position: -150%; } }\n" +
+"    /* PERBAIKAN ANIMASI LOGO: 100% Statik di akhir, tidak ada kilau sisa */\n" +
+"    .logo-container { \n" +
+"       display: inline-block; \n" +
+"       -webkit-mask-image: linear-gradient(-75deg, rgba(0,0,0,1) 40%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,1) 60%); \n" +
+"       -webkit-mask-size: 300%; \n" +
+"       animation: shine-logo 7s ease-in-out 1 forwards, pro-glow 3s ease-in-out 7s 1 forwards; \n" +
+"    }\n" +
+"    @keyframes shine-logo { 0% { -webkit-mask-position: 200%; } 100% { -webkit-mask-position: -100%; } }\n" +
+"    @keyframes pro-glow { 0% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(234, 67, 53, 0)); } 50% { transform: scale(1.03); filter: drop-shadow(0 0 10px rgba(66, 133, 244, 0.4)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(0, 0, 0, 0)); } }\n" +
 "    \n" +
 "    .kilau-footer { background: linear-gradient(110deg, #64748b 40%, #000000 50%, #64748b 60%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; animation: shine-infinite 4s linear infinite; }\n" +
 "    @keyframes shine-infinite { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }\n" +
@@ -179,7 +190,7 @@ export default {
 "        <button onclick='salinEmail()' class='w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-md active:scale-95 uppercase text-sm transition'>Salin Alamat Email 📋</button>\n" +
 "        <div class='flex gap-2'>\n" +
 "          <button onclick='gr(true)' class='flex-[2] bg-white border border-gray-300 text-gray-600 font-bold py-3 rounded-xl active:scale-95 uppercase text-xs hover:bg-gray-50 transition'>Ganti Nama Identitas</button>\n" +
-"          <button onclick='bukaModalDaftarDomain()' class='flex-1 bg-gray-800 text-white font-bold py-3 rounded-xl active:scale-95 uppercase text-[10px] hover:bg-gray-900 transition'>🌐 Domain</button>\n" +
+"          <button onclick='bukaTutorialMaster()' class='flex-1 bg-green-600 text-white font-bold py-3 rounded-xl active:scale-95 uppercase text-[10px] hover:bg-green-700 transition shadow-md'>📚 Tutorial</button>\n" +
 "        </div>\n" +
 "      </div>\n" +
 "    </div>\n" +
@@ -225,7 +236,7 @@ export default {
 "        <button onclick='tutupModalDaftarDomain()' class='text-gray-400 hover:text-red-500 font-bold text-2xl'>&times;</button>\n" +
 "      </div>\n" +
 "      <div class='px-4 pt-3 pb-1 bg-white'>\n" +
-"        <p class='text-[10px] text-gray-500 leading-relaxed'>Semua domain di bawah ini ditambahkan oleh komunitas dan bisa digunakan bersama secara global.</p>\n" +
+"        <p class='text-[10px] text-gray-500 leading-relaxed'>Semua domain ini disumbangkan oleh komunitas dan bisa dinikmati bersama secara Global.</p>\n" +
 "      </div>\n" +
 "      <div id='listDomainContainer' class='p-4 overflow-y-auto space-y-3 flex-grow bg-gray-50'>\n" +
 "        \n" +
@@ -250,29 +261,63 @@ export default {
 "  </div>\n" +
 "\n" +
 "  \n" +
-"  <div id='modalTutorial' class='fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-all duration-300'>\n" +
-"    <div class='bg-white p-6 rounded-[2rem] max-w-md w-full text-left mx-4 pop-up-anim shadow-2xl border-t-4 border-blue-500 overflow-y-auto max-h-[90vh]'>\n" +
+"  <div id='modalTambahDomain' class='fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-all duration-300'>\n" +
+"    <div class='bg-white p-6 rounded-[2rem] max-w-sm w-full text-left mx-4 pop-up-anim shadow-2xl border-t-4 border-gray-800'>\n" +
 "      <h3 class='text-xl font-extrabold text-gray-800 mb-1 border-b pb-3 border-gray-100'>Sumbang Domain Global</h3>\n" +
-"      <p class='text-[10px] text-gray-500 mt-3 mb-4 leading-relaxed'>Jadilah kontributor! Tambahkan domain nganggur Anda agar bisa digunakan oleh seluruh pengguna Habi Mail di seluruh dunia.</p>\n" +
+"      <p class='text-[10px] text-gray-500 mt-3 mb-4 leading-relaxed'>Tambahkan domain nganggur Anda agar bisa digunakan oleh seluruh pengguna Habi Mail di dunia.</p>\n" +
 "      \n" +
-"      <div class='bg-blue-50 p-4 rounded-xl border border-blue-100 mb-5 shadow-sm'>\n" +
-"        <p class='text-xs font-bold text-blue-800 mb-2'>1. Masukkan Domain Anda:</p>\n" +
-"        <input type='text' id='inputNewDomain' placeholder='Contoh: domainku.com' class='w-full p-4 rounded-xl border border-blue-200 text-center text-sm font-bold mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400'>\n" +
-"        <button onclick='tambahDomain()' class='w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold py-4 rounded-xl text-xs uppercase shadow-md transition transform active:scale-95'>Integrasikan Domain</button>\n" +
+"      <div class='bg-gray-50 p-4 rounded-xl border border-gray-200 mb-5 shadow-sm'>\n" +
+"        <input type='text' id='inputNewDomain' placeholder='Contoh: domainku.com' class='w-full p-4 rounded-xl border border-gray-300 text-center text-sm font-bold mb-3 focus:outline-none focus:ring-2 focus:ring-blue-400'>\n" +
+"        <button onclick='tambahDomainGlobal()' class='w-full bg-gray-800 hover:bg-gray-900 text-white font-extrabold py-4 rounded-xl text-xs uppercase shadow-md transition transform active:scale-95'>Integrasikan Domain</button>\n" +
 "      </div>\n" +
+"      \n" +
+"      <button onclick='tutupModalTambahDomain()' class='w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl text-xs uppercase'>Batal</button>\n" +
+"    </div>\n" +
+"  </div>\n" +
 "\n" +
-"      <h4 class='text-sm font-extrabold text-gray-800 mb-2'>2. Panduan Wajib Setting Cloudflare:</h4>\n" +
-"      <p class='text-[10px] text-red-600 font-bold mb-3 bg-red-50 p-3 rounded-lg border border-red-100 leading-relaxed'>PERHATIAN: Domain yang ditambahkan TIDAK AKAN BISA menerima email jika Anda selaku pemilik domain tidak menyambungkan rutenya di Cloudflare.</p>\n" +
-"      \n" +
-"      <div class='text-[10px] text-gray-700 space-y-4 font-medium leading-relaxed bg-gray-50 p-5 rounded-xl border border-gray-200 shadow-inner'>\n" +
-"         <div><b class='text-blue-600 text-xs block mb-1'>Langkah 1: Siapkan Domain</b> Beli domain murah di provider manapun. Ubah Name Server (NS) di pengaturan provider Anda menuju ke NS Cloudflare milik Anda. Tunggu hingga aktif.</div>\n" +
-"         <div><b class='text-blue-600 text-xs block mb-1'>Langkah 2: Menu Email Routing</b> Login ke Cloudflare, klik domain Anda. Di menu sebelah kiri, klik menu <b>Email</b>, lalu pilih <b>Email Routing</b>. Ikuti tombol aktivasi otomatis sampai muncul tulisan hijau (Routing Enabled).</div>\n" +
-"         <div><b class='text-blue-600 text-xs block mb-1'>Langkah 3: Atur Jaring Penangkap (Catch-All)</b> Masih di halaman Email Routing, klik tab <b>Routing Rules</b>. Scroll ke paling bawah, temukan bagian <b>Catch-all address</b>, lalu klik Edit.</div>\n" +
-"         <div class='bg-yellow-50 p-3 rounded border border-yellow-200'><b class='text-red-600 text-xs block mb-1'>Langkah 4: Koneksi Ke Habi Mail (SANGAT PENTING!)</b> Pada kolom 'Action', pilih <span class='bg-white font-bold px-1 rounded border'>Send to a Worker</span>. Kemudian pada kolom 'Destination', klik dan <span class='underline font-bold'>Pilih nama Worker Cloudflare Habi Mail Anda (misal: web-email-ku)</span>. Pastikan tombol Status di bawahnya menyala (Active), lalu klik Save.</div>\n" +
-"         <div class='mt-2 text-green-700 font-bold bg-green-50 p-3 rounded border border-green-200'>⏳ ESTIMASI SELESAI: Setelah disimpan, butuh waktu 5 - 15 menit agar DNS merambat ke seluruh dunia. Setelah itu, domain Anda siap dipakai menerima kode verifikasi 24 jam!</div>\n" +
+"  \n" +
+"  <div id='modalTutorialFull' class='fixed inset-0 bg-black/60 z-50 hidden flex flex-col items-center justify-end sm:justify-center backdrop-blur-sm transition-all duration-300'>\n" +
+"    <div class='bg-gray-50 rounded-t-[2rem] sm:rounded-[2rem] w-full max-w-md mx-auto pop-up-anim shadow-2xl border-t-4 border-green-500 overflow-hidden flex flex-col max-h-[90vh]'>\n" +
+"      <div class='p-5 bg-white border-b border-gray-200 flex justify-between items-center'>\n" +
+"        <h3 class='text-lg font-bold text-gray-800'>Tutorial Master Cloudflare</h3>\n" +
+"        <button onclick='tutupTutorialMaster()' class='text-gray-400 hover:text-red-500 font-bold text-2xl'>&times;</button>\n" +
 "      </div>\n" +
-"      \n" +
-"      <button onclick='tutupTutorial()' class='w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-4 mt-5 rounded-xl text-xs uppercase shadow-md transition'>Tutup Panduan</button>\n" +
+"      <div class='p-5 overflow-y-auto space-y-4 flex-grow bg-white text-[11px] text-gray-700 leading-relaxed font-medium'>\n" +
+"         <p class='text-red-600 font-bold bg-red-50 p-3 rounded-lg border border-red-100'>PERHATIAN: Domain yang ditambahkan di web ini TIDAK AKAN BISA menerima email jika pemilik domain belum menyambungkan rutenya di Cloudflare.</p>\n" +
+"         \n" +
+"         <div class='bg-gray-50 p-4 rounded-xl border border-gray-100'>\n" +
+"            <b class='text-blue-600 text-sm block mb-1'>Langkah 1: Siapkan Domain</b>\n" +
+"            Beli domain di provider pilihan Anda (Niagahoster, Hostinger, dll). Masuk ke pengaturan provider, lalu ubah Name Server (NS) bawaan menjadi Name Server (NS) Cloudflare milik Anda. Tunggu hingga domain aktif di Cloudflare.\n" +
+"         </div>\n" +
+"         \n" +
+"         <div class='bg-gray-50 p-4 rounded-xl border border-gray-100'>\n" +
+"            <b class='text-blue-600 text-sm block mb-1'>Langkah 2: Aktifkan Email Routing</b>\n" +
+"            Login ke Cloudflare. Klik domain Anda yang baru ditambahkan. Di deretan menu sebelah kiri, cari dan klik menu <b>Email</b>, lalu pilih <b>Email Routing</b>. Ikuti petunjuk di layar dan klik tombol aktivasi otomatis sampai statusnya berubah menjadi tulisan hijau (Routing Enabled).\n" +
+"         </div>\n" +
+"         \n" +
+"         <div class='bg-gray-50 p-4 rounded-xl border border-gray-100'>\n" +
+"            <b class='text-blue-600 text-sm block mb-1'>Langkah 3: Atur Jaring Penangkap</b>\n" +
+"            Masih di halaman Email Routing, perhatikan deretan tab di atas, lalu klik tab <b>Routing Rules</b>. Scroll ke paling bawah layar, temukan bagian bernama <b>Catch-all address</b>, lalu klik tulisan <i>Edit</i> di pojok kanannya.\n" +
+"         </div>\n" +
+"         \n" +
+"         <div class='bg-yellow-50 p-4 rounded-xl border border-yellow-200'>\n" +
+"            <b class='text-red-600 text-sm block mb-2'>Langkah 4: Sambungkan ke Habi Mail (PENTING!)</b>\n" +
+"            Di menu Catch-all tersebut, atur seperti ini:\n" +
+"            <ul class='list-disc pl-4 mt-2 space-y-1'>\n" +
+"              <li>Pada kolom <i>Action</i>: Klik dan pilih <span class='bg-white font-bold px-1 rounded border'>Send to a Worker</span></li>\n" +
+"              <li>Pada kolom <i>Destination</i>: Akan muncul daftar Worker Cloudflare Anda. <b>Pilih nama Worker tempat Anda menginstal kode Habi Mail ini (misal: pilih <i>web-email-ku</i>)</b>.</li>\n" +
+"              <li>Pastikan tombol saklar <i>Status</i> menyala (Active/Hijau).</li>\n" +
+"              <li>Klik tombol <b>Save</b> (Simpan).</li>\n" +
+"            </ul>\n" +
+"         </div>\n" +
+"         \n" +
+"         <div class='bg-green-50 p-4 rounded-xl border border-green-200 text-green-800 font-bold'>\n" +
+"            ⏳ ESTIMASI SELESAI: Setelah disimpan, butuh waktu sekitar 5 - 15 menit agar DNS merambat ke seluruh dunia. Setelah itu, domain Anda 100% siap dipakai menerima kode verifikasi 24 jam nonstop dari aplikasi mana saja!\n" +
+"         </div>\n" +
+"      </div>\n" +
+"      <div class='p-5 bg-white border-t border-gray-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]'>\n" +
+"        <button onclick='tutupTutorialMaster()' class='w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl uppercase text-xs shadow-md transition'>Saya Sudah Paham</button>\n" +
+"      </div>\n" +
 "    </div>\n" +
 "  </div>\n" +
 "\n" +
@@ -296,12 +341,10 @@ export default {
 "    }\n" +
 "    initSplash();\n" +
 "\n" +
-"    // Algoritma Nama Anti-Spam Super (Acak nama + ribuan angka tak terbatas)\n" +
+"    // Algoritma Nama Anti-Spam Super (Acak nama + 5 angka acak + ID Waktu)\n" +
 "    const nD=['Zahra','Kania','Nabila','Kirana','Salsabila','Aurel','Nadhira','Cantika','Arsy','Syafira','Tiara','Almira','Dinda','Citra','Lestari'];\n" +
 "    const nB=['Maharani','Larasati','Widya','Puspa','Kirani','Azzahra','Maheswari','Kusuma','Anggraini','Pertiwi','Ningrum','Sari'];\n" +
 "    let curMsgs=[]; let listDomObj = [];\n" +
-"    const hri = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];\n" +
-"    const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];\n" +
 "    \n" +
 "    async function loadDomains() {\n" +
 "       try {\n" +
@@ -309,7 +352,7 @@ export default {
 "         const data = await r.json();\n" +
 "         let now = Date.now();\n" +
 "         listDomObj = data.map(x => {\n" +
-"            if(x.isNew && (now - (x.ts || 0) > 300000)) x.isNew = false; // Badge NEW hilang setelah 5 menit\n" +
+"            if(x.isNew && (now - (x.ts || 0) > 300000)) x.isNew = false;\n" +
 "            return x;\n" +
 "         });\n" +
 "         renderMenuDaftarDomain();\n" +
@@ -322,13 +365,17 @@ export default {
 "       let html = '';\n" +
 "       listDomObj.forEach(item => {\n" +
 "          let badgeNew = item.isNew ? '<span class=\"bg-red-600 text-white text-[8px] font-bold px-2 py-0.5 rounded badge-new absolute top-3 right-3 shadow-md\">NEW</span>' : '';\n" +
-"          let btnHapus = !item.locked ? '<button onclick=\"hapusDomain(\\''+item.d+'\\')\" class=\"text-[9px] font-bold text-red-500 hover:text-white hover:bg-red-500 bg-red-50 px-4 py-2 rounded-lg border border-red-200 uppercase transition\">Hapus Global</button>' : '';\n" +
+"          let btnHapus = !item.locked ? '<button onclick=\"hapusDomainGlobal(\\''+item.d+'\\')\" class=\"text-[9px] font-bold text-red-500 hover:text-white hover:bg-red-500 bg-red-50 px-4 py-2 rounded-lg border border-red-200 uppercase transition\">Hapus Global</button>' : '';\n" +
 "          let lockIco = item.locked ? '<span class=\"text-[10px] ml-2 text-gray-400\">🔒 Master</span>' : '';\n" +
+"          \n" +
+"          // ID unik untuk wadah status agar bisa diupdate asynchronous tanpa lag\n" +
+"          let statusId = 'status_dom_' + item.d.replace(/[^a-zA-Z0-9]/g, '');\n" +
 "          \n" +
 "          html += '<div class=\"bg-white border border-gray-200 rounded-2xl p-5 relative shadow-sm hover:border-blue-400 hover:shadow-md transition-all\">' +\n" +
 "             badgeNew +\n" +
 "             '<div class=\"font-extrabold text-gray-800 text-sm mb-1\">' + item.d + lockIco + '</div>' +\n" +
-"             '<div class=\"text-[9px] text-gray-500 font-medium mb-4 bg-gray-50 inline-block px-2 py-1 rounded border border-gray-100\">⌚ Ditambahkan: ' + item.t + '</div>' +\n" +
+"             '<div class=\"text-[9px] text-gray-500 font-medium mb-3 bg-gray-50 inline-block px-2 py-1 rounded border border-gray-100\">⌚ Ditambahkan: ' + item.t + '</div>' +\n" +
+"             '<div id=\"'+statusId+'\" class=\"text-[9px] font-bold text-gray-400 mb-4\">Mengecek jaringan...</div>' +\n" +
 "             '<div class=\"flex justify-between items-center\">' +\n" +
 "                btnHapus +\n" +
 "                '<button onclick=\"pilihDomainUi(\\''+item.d+'\\')\" class=\"text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg uppercase shadow-md transition ml-auto\">Gunakan Ini</button>' +\n" +
@@ -336,6 +383,21 @@ export default {
 "          '</div>';\n" +
 "       });\n" +
 "       container.innerHTML = html;\n" +
+"       // Cek status satu per satu setelah render\n" +
+"       listDomObj.forEach(item => { cekStatusList(item.d, 'status_dom_' + item.d.replace(/[^a-zA-Z0-9]/g, '')); });\n" +
+"    }\n" +
+"\n" +
+"    async function cekStatusList(dom, elId) {\n" +
+"       const el = document.getElementById(elId);\n" +
+"       if(!el) return;\n" +
+"       if(dom === 'habisuno.my.id') { el.innerHTML = '🟢 Terhubung & Siap dipakai'; el.className = 'text-[9px] font-bold text-green-600 mb-4'; return; }\n" +
+"       try {\n" +
+"          const res = await fetch('https://cloudflare-dns.com/dns-query?name='+dom+'&type=MX', {headers: {'accept': 'application/dns-json'}});\n" +
+"          const data = await res.json();\n" +
+"          let terhubung = data.Answer && data.Answer.some(r => r.data.includes('cloudflare.net'));\n" +
+"          if(terhubung) { el.innerHTML = '🟢 Terhubung & Siap dipakai'; el.className = 'text-[9px] font-bold text-green-600 mb-4'; }\n" +
+"          else { el.innerHTML = '🔴 Belum Disetting Cloudflare'; el.className = 'text-[9px] font-bold text-red-500 mb-4'; }\n" +
+"       } catch(e) { el.innerHTML = '🟡 Gagal mengecek'; }\n" +
 "    }\n" +
 "\n" +
 "    function pilihDomainUi(dom) {\n" +
@@ -393,7 +455,7 @@ export default {
 "             stUI.innerHTML = 'Status: 🟢 Terhubung & Siap Menerima Kode Verifikasi';\n" +
 "             stUI.className = 'text-[10px] font-bold mb-4 bg-green-50 text-green-700 p-3 rounded-xl border border-green-200';\n" +
 "          } else {\n" +
-"             stUI.innerHTML = 'Status: 🔴 Belum Terhubung - <a href=\"#\" onclick=\"bukaTutorial()\" class=\"underline text-blue-600\">Lihat Solusi Disini</a>';\n" +
+"             stUI.innerHTML = 'Status: 🔴 Belum Terhubung - <span onclick=\"bukaTutorialMaster()\" class=\"underline text-blue-600 cursor-pointer\">Lihat Solusi Disini</span>';\n" +
 "             stUI.className = 'text-[10px] font-bold mb-4 bg-red-50 text-red-600 p-3 rounded-xl border border-red-200';\n" +
 "          }\n" +
 "       } catch(e) { stUI.innerHTML = 'Status: 🟡 Cek koneksi internet Anda.'; }\n" +
@@ -414,15 +476,19 @@ export default {
 "    \n" +
 "    function bukaModalDaftarDomain() { document.getElementById('modalDaftarDomain').classList.remove('hidden'); }\n" +
 "    function tutupModalDaftarDomain() { document.getElementById('modalDaftarDomain').classList.add('hidden'); }\n" +
-"    function bukaModalTambahDomain() { document.getElementById('modalTutorial').classList.remove('hidden'); }\n" +
-"    function tutupTutorial() { document.getElementById('modalTutorial').classList.add('hidden'); }\n" +
+"    function bukaModalTambahDomain() { document.getElementById('modalTambahDomain').classList.remove('hidden'); }\n" +
+"    function tutupModalTambahDomain() { document.getElementById('modalTambahDomain').classList.add('hidden'); }\n" +
+"    function bukaTutorialMaster() { document.getElementById('modalTutorialFull').classList.remove('hidden'); }\n" +
+"    function tutupTutorialMaster() { document.getElementById('modalTutorialFull').classList.add('hidden'); }\n" +
 "\n" +
-"    async function tambahDomain() {\n" +
+"    async function tambahDomainGlobal() {\n" +
 "       let val = document.getElementById('inputNewDomain').value.trim().toLowerCase();\n" +
 "       let ada = listDomObj.find(x => x.d === val);\n" +
 "       if(val && !ada) { \n" +
+"          const hriStr = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];\n" +
+"          const blnStr = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];\n" +
 "          let n = new Date();\n" +
-"          let tStr = hri[n.getDay()]+', '+n.getDate()+' '+bln[n.getMonth()]+' '+n.getFullYear()+' | Pukul '+n.toLocaleTimeString('id-ID',{hour12:false}).replace(/\\./g,':');\n" +
+"          let tStr = hriStr[n.getDay()]+', '+n.getDate()+' '+blnStr[n.getMonth()]+' '+n.getFullYear()+' | Pukul '+n.toLocaleTimeString('id-ID',{hour12:false}).replace(/\\./g,':');\n" +
 "          \n" +
 "          await fetch('/api/domains', {method:'POST', body:JSON.stringify({action:'add', domain:val, time:tStr})});\n" +
 "          await loadDomains(); \n" +
@@ -430,11 +496,11 @@ export default {
 "          document.getElementById('teksDomainAktif').innerText = val;\n" +
 "          updateFullEmail();\n" +
 "          document.getElementById('inputNewDomain').value='';\n" +
-"          tutupTutorial();\n" +
-"          showModalMaster('Integrasi Berhasil!', 'Domain publik \"'+val+'\" telah mengudara di server Habi Mail. Semua pengguna kini bisa melihat dan memakainya.', '🚀');\n" +
+"          tutupModalTambahDomain();\n" +
+"          showModalMaster('Integrasi Berhasil!', 'Domain publik \"'+val+'\" telah mengudara di server Habi Mail. Semua pengguna di dunia kini bisa melihat dan memakainya.', '🚀');\n" +
 "       }\n" +
 "    }\n" +
-"    async function hapusDomain(val) {\n" +
+"    async function hapusDomainGlobal(val) {\n" +
 "       if(val === 'habisuno.my.id') { showModalMaster('Akses Ditolak', 'Domain master sistem tidak bisa dihapus!', '❌'); return; }\n" +
 "       if(!confirm('Yakin hapus '+val+' untuk SEMUA pengguna global?')) return;\n" +
 "       \n" +
@@ -505,11 +571,13 @@ export default {
 "    }\n" +
 "\n" +
 "    window.onload = () => { \n" +
+"      const hriStr = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];\n" +
+"      const blnStr = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];\n" +
 "      loadDomains();\n" +
 "      deteksiHP();\n" +
 "      setInterval(() => { \n" +
 "        const n = new Date(); \n" +
-"        document.getElementById('waktuLengkap').innerText = hri[n.getDay()] + ', ' + n.getDate() + ' ' + bln[n.getMonth()] + ' ' + n.getFullYear() + ' | ' + n.toLocaleTimeString('id-ID', {hour12:true}).replace(/\\./g,':'); \n" +
+"        document.getElementById('waktuLengkap').innerText = hriStr[n.getDay()] + ', ' + n.getDate() + ' ' + blnStr[n.getMonth()] + ' ' + n.getFullYear() + ' | ' + n.toLocaleTimeString('id-ID', {hour12:true}).replace(/\\./g,':'); \n" +
 "        renderMsgs(); \n" +
 "      }, 1000); \n" +
 "      setInterval(chk, 5000);\n" +
