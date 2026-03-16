@@ -45,7 +45,6 @@ export default {
   async fetch(req, env) {
     const u = new URL(req.url);
     
-    // API Pesan
     if (u.pathname === "/api/pesan") {
       try {
         let all = [];
@@ -69,33 +68,6 @@ export default {
       } catch (err) { return new Response("Error"); }
     }
 
-    // API Database Domain Lintas Perangkat
-    if (u.pathname === "/api/domains" && req.method === "GET") {
-      try {
-        let doms = ["habisuno.my.id"];
-        const ext = await env.DB.get("DOMAINS_HABI");
-        if(ext) doms = JSON.parse(ext);
-        return new Response(JSON.stringify(doms), {headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
-      } catch(err) { return new Response('["habisuno.my.id"]', {headers: {'Content-Type': 'application/json'}}); }
-    }
-
-    if (u.pathname === "/api/domains" && req.method === "POST") {
-      try {
-        const { action, domain } = await req.json();
-        let doms = ["habisuno.my.id"];
-        const ext = await env.DB.get("DOMAINS_HABI");
-        if(ext) doms = JSON.parse(ext);
-        
-        if (action === "add" && domain && !doms.includes(domain)) {
-          doms.push(domain.toLowerCase().trim());
-        } else if (action === "del" && domain && domain !== "habisuno.my.id") {
-          doms = doms.filter(d => d !== domain);
-        }
-        await env.DB.put("DOMAINS_HABI", JSON.stringify(doms));
-        return new Response("OK");
-      } catch (err) { return new Response("Error"); }
-    }
-
     const ip = req.headers.get('cf-connecting-ip') || 'IP Tidak Terdeteksi';
     const isp = (req.cf && req.cf.asOrganization) ? req.cf.asOrganization : 'ISP Tidak Terdeteksi';
 
@@ -113,7 +85,7 @@ export default {
 "    .font-google { font-family: 'Product Sans', Arial, sans-serif; font-weight: 700; letter-spacing: -2px; }\n" +
 "    .font-estetik { font-family: 'Playfair Display', serif; }\n" +
 "    \n" +
-"    /* Animasi Logo: Kilau 7s, lalu Bouncing Cahaya Pro 3s, lalu statik */\n" +
+"    /* Animasi Logo: Kilau 7s, lalu Glowing Pro 3s, lalu statik */\n" +
 "    .logo-container { \n" +
 "       display: inline-block; \n" +
 "       -webkit-mask-image: linear-gradient(-75deg, rgba(0,0,0,1) 30%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,1) 70%); \n" +
@@ -121,9 +93,8 @@ export default {
 "       animation: shine-logo 7s ease-in-out 1 forwards, pro-glow 3s ease-in-out 7s 1 forwards; \n" +
 "    }\n" +
 "    @keyframes shine-logo { 0% { -webkit-mask-position: 200%; } 100% { -webkit-mask-position: -200%; } }\n" +
-"    @keyframes pro-glow { 0% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(234, 67, 53, 0)); } 50% { transform: scale(1.05); filter: drop-shadow(0 0 15px rgba(234, 67, 53, 0.6)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(234, 67, 53, 0)); } }\n" +
+"    @keyframes pro-glow { 0% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(234, 67, 53, 0)); } 50% { transform: scale(1.03); filter: drop-shadow(0 0 10px rgba(66, 133, 244, 0.4)); } 100% { transform: scale(1); filter: drop-shadow(0 0 0px rgba(0, 0, 0, 0)); } }\n" +
 "    \n" +
-"    /* Copyright Kilau Lambat Infinite */\n" +
 "    .kilau-footer { background: linear-gradient(110deg, #64748b 40%, #000000 50%, #64748b 60%); background-size: 200% auto; color: transparent; -webkit-background-clip: text; animation: shine-infinite 4s linear infinite; }\n" +
 "    @keyframes shine-infinite { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }\n" +
 "    \n" +
@@ -134,6 +105,7 @@ export default {
 "  </style>\n" +
 "</head>\n" +
 "<body class='min-h-screen flex flex-col text-gray-800'>\n" +
+"  \n" +
 "  <div class='bg-gray-900 text-gray-300 text-[9px] px-4 py-2 flex justify-between font-bold shadow-sm uppercase'>\n" +
 "    <div id='waktuLengkap'>Memuat Waktu...</div>\n" +
 "    <div>📍 Jember, Jawa Timur</div>\n" +
@@ -151,15 +123,21 @@ export default {
 "          <span style='color: #34A853' class='ml-2'>M</span><span style='color: #EA4335'>a</span><span style='color: #FBBC05'>i</span><span style='color: #4285F4'>l</span>\n" +
 "        </h1>\n" +
 "      </div>\n" +
-"      <p class='text-gray-500 text-[10px] tracking-[0.2em] font-bold uppercase mt-2'>Layanan Email Sementara</p>\n" +
+"      <p class='text-gray-500 text-[10px] tracking-[0.2em] font-bold uppercase mt-2'>Layanan Email Sementara Profesional</p>\n" +
 "    </div>\n" +
 "\n" +
+"    \n" +
 "    <div class='glass p-6 rounded-2xl shadow-sm mb-6 border-t-4 border-red-600'>\n" +
-"      <div class='flex items-center mb-4'>\n" +
+"      <div class='flex items-center mb-2'>\n" +
 "         <input type='text' id='emUser' class='w-1/2 p-3 rounded-l-xl border-y border-l border-gray-200 text-right bg-gray-50 text-gray-800 font-bold focus:outline-none' readonly>\n" +
 "         <span class='bg-gray-50 border-y border-gray-200 text-gray-400 p-3 font-bold'>@</span>\n" +
 "         <select id='emDomain' onchange='updateFullEmail()' class='w-1/2 p-3 rounded-r-xl border-y border-r border-gray-200 text-left bg-gray-50 text-red-600 font-bold focus:outline-none cursor-pointer appearance-none'></select>\n" +
 "      </div>\n" +
+"      \n" +
+"      <div id='statusDomain' class='text-[10px] font-bold mb-4 bg-gray-100 p-2 rounded-lg border border-gray-200 transition-all'>\n" +
+"         Sedang mengecek status jaringan domain...\n" +
+"      </div>\n" +
+"\n" +
 "      <input type='hidden' id='emFull'>\n" +
 "      <div class='flex flex-col gap-3'>\n" +
 "        <button onclick='salinEmail()' class='w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-md active:scale-95 uppercase text-sm transition'>Salin Alamat Email 📋</button>\n" +
@@ -170,6 +148,7 @@ export default {
 "      </div>\n" +
 "    </div>\n" +
 "\n" +
+"    \n" +
 "    <div class='glass rounded-2xl shadow-sm overflow-hidden mb-8 text-left'>\n" +
 "      <div class='bg-white px-6 py-4 border-b flex justify-between items-center'>\n" +
 "        <h2 class='text-gray-800 text-sm font-bold'>📥 KOTAK MASUK</h2>\n" +
@@ -186,6 +165,7 @@ export default {
 "      </div>\n" +
 "    </div>\n" +
 "\n" +
+"    \n" +
 "    <div class='glass rounded-2xl p-8 text-center shadow-sm border-t-4 border-gray-800 mb-8'>\n" +
 "      <h3 class='text-2xl font-extrabold mb-4 text-gray-800 font-estetik'>Definisi Kebebasan Tanpa Batas</h3>\n" +
 "      <p class='text-sm text-gray-600 mb-8 leading-relaxed font-medium'>\n" +
@@ -204,41 +184,48 @@ export default {
 "  </div>\n" +
 "\n" +
 "  \n" +
-"  <div id='modalSalin' class='fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-all duration-300'>\n" +
+"  <div id='modalMaster' class='fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-all duration-300'>\n" +
 "    <div class='bg-white p-8 rounded-[2rem] shadow-2xl max-w-xs w-full text-center mx-4 pop-up-anim border-t-4 border-red-600'>\n" +
-"      <div class='w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4'><span class='text-3xl'>📋</span></div>\n" +
-"      <h3 class='text-xl font-bold text-gray-800 mb-2'>Tersalin Sempurna!</h3>\n" +
-"      <p class='text-xs text-gray-600 mb-6 font-medium leading-relaxed'>Alamat email sementara Anda siap beraksi. Gunakan untuk mendaftar akun tanpa takut spam menghantui.</p>\n" +
-"      <button onclick='tutupModalSalin()' class='w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl text-xs uppercase tracking-widest transition'>Tutup</button>\n" +
+"      <h1 class='text-2xl font-google mb-4'><span style='color:#4285F4'>H</span><span style='color:#EA4335'>a</span><span style='color:#FBBC05'>b</span><span style='color:#4285F4'>i</span> <span style='color:#34A853'>M</span><span style='color:#EA4335'>a</span><span style='color:#FBBC05'>i</span><span style='color:#4285F4'>l</span></h1>\n" +
+"      <h3 id='modalTitle' class='text-xl font-bold text-gray-800 mb-2'>Sukses!</h3>\n" +
+"      <p id='modalDesc' class='text-xs text-gray-600 mb-6 font-medium leading-relaxed'>Aksi berhasil dilakukan.</p>\n" +
+"      <button onclick='tutupModalMaster()' class='w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl text-xs uppercase tracking-widest transition'>Tutup Peringatan</button>\n" +
 "      <p class='text-[8px] text-gray-400 mt-5'>&copy; HABI MAIL UNLIMITED</p>\n" +
 "    </div>\n" +
 "  </div>\n" +
 "\n" +
 "  \n" +
 "  <div id='modalDomain' class='fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-all duration-300'>\n" +
-"    <div class='bg-white p-6 rounded-[2rem] max-w-xs w-full text-center mx-4 pop-up-anim shadow-2xl border-t-4 border-gray-800'>\n" +
-"      <h3 class='text-xl font-bold text-gray-800 mb-2'>Kelola Domain</h3>\n" +
-"      <p class='text-[9px] text-red-500 font-bold mb-4 bg-red-50 p-2 rounded-lg'>PENTING: Domain yang ditambahkan di sini HARUS sudah di-setting Email Routing Catch-All di dashboard Cloudflare Anda agar bisa menerima email!</p>\n" +
-"      <input type='text' id='inputNewDomain' placeholder='Contoh: domainbaru.com' class='w-full p-3 rounded-xl border border-gray-300 text-center text-xs font-bold mb-3 focus:outline-none'>\n" +
+"    <div class='bg-white p-6 rounded-[2rem] max-w-sm w-full text-center mx-4 pop-up-anim shadow-2xl border-t-4 border-gray-800 overflow-y-auto max-h-[90vh]'>\n" +
+"      <h3 class='text-xl font-bold text-gray-800 mb-2'>Kelola Domain Custom</h3>\n" +
+"      <p class='text-[10px] text-gray-500 mb-4'>Tambahkan domain pribadi Anda ke sistem kami secara permanen.</p>\n" +
+"      \n" +
+"      <input type='text' id='inputNewDomain' placeholder='Contoh: domainku.com' class='w-full p-3 rounded-xl border border-gray-300 text-center text-xs font-bold mb-3 focus:outline-none focus:border-blue-500'>\n" +
 "      <div class='flex gap-2 mb-4'>\n" +
-"         <button onclick='tambahDomain()' class='flex-1 bg-blue-600 text-white font-bold py-2 rounded-xl text-[10px] uppercase'>Tambah</button>\n" +
-"         <button onclick='hapusDomain()' class='flex-1 bg-red-100 text-red-600 font-bold py-2 rounded-xl text-[10px] uppercase'>Hapus</button>\n" +
+"         <button onclick='tambahDomain()' class='flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl text-[10px] uppercase shadow-md hover:bg-blue-700 transition'>Tambah Permanen</button>\n" +
+"         <button onclick='hapusDomain()' class='flex-1 bg-red-50 text-red-600 border border-red-200 font-bold py-3 rounded-xl text-[10px] uppercase hover:bg-red-100 transition'>Hapus</button>\n" +
 "      </div>\n" +
-"      <button onclick='tutupModalDomain()' class='w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl text-xs uppercase'>Tutup</button>\n" +
+"      \n" +
+"      <button onclick='bukaTutorial()' class='w-full bg-green-50 text-green-700 border border-green-200 font-bold py-3 rounded-xl text-[10px] uppercase mb-4 hover:bg-green-100 transition'>📚 Cara Setting Cloudflare (Wajib)</button>\n" +
+"      <button onclick='tutupModalDomain()' class='w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 rounded-xl text-xs uppercase shadow-md transition'>Tutup Menu</button>\n" +
 "    </div>\n" +
 "  </div>\n" +
 "\n" +
 "  \n" +
-"  <div id='modalHapus' class='fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-all duration-300'>\n" +
-"    <div class='bg-white p-6 rounded-[2rem] max-w-xs w-full text-center mx-4 pop-up-anim shadow-2xl'>\n" +
-"      <h1 class='text-2xl font-google mb-3'><span style='color:#4285F4'>H</span><span style='color:#EA4335'>a</span><span style='color:#FBBC05'>b</span><span style='color:#4285F4'>i</span> <span style='color:#34A853'>M</span><span style='color:#EA4335'>a</span><span style='color:#FBBC05'>i</span><span style='color:#4285F4'>l</span></h1>\n" +
-"      <p class='text-gray-800 font-bold text-lg mb-1'>Hapus pesan ini?</p>\n" +
-"      <p class='text-xs text-gray-500 mb-6 font-medium px-2'>Pesan akan lenyap dan tidak dapat dikembalikan.</p>\n" +
-"      <div class='flex gap-3 mb-2'>\n" +
-"        <button onclick='batalHapus()' class='flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-3 rounded-xl text-xs uppercase'>Batal</button>\n" +
-"        <button onclick='prosesHapus()' class='flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl text-xs uppercase shadow-md'>Ya, Hapus</button>\n" +
+"  <div id='modalTutorial' class='fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm transition-all duration-300'>\n" +
+"    <div class='bg-white p-6 rounded-[2rem] max-w-sm w-full text-left mx-4 pop-up-anim shadow-2xl border-t-4 border-blue-500 overflow-y-auto max-h-[85vh]'>\n" +
+"      <h3 class='text-lg font-bold text-gray-800 mb-2 border-b pb-2'>Panduan Setting Cloudflare</h3>\n" +
+"      <p class='text-[10px] text-red-600 font-bold mb-3 bg-red-50 p-2 rounded'>PENTING: Domain yang baru Anda tambahkan WAJIB disetting di Cloudflare Anda sendiri agar bisa menerima pesan.</p>\n" +
+"      \n" +
+"      <div class='text-[10px] text-gray-700 space-y-3 font-medium leading-relaxed'>\n" +
+"         <p><b class='text-blue-600'>Langkah 1:</b> Login ke dashboard Cloudflare Anda dan pilih domain yang baru saja Anda tambahkan.</p>\n" +
+"         <p><b class='text-blue-600'>Langkah 2:</b> Di menu sebelah kiri, cari dan klik menu <b>Email</b>, lalu pilih <b>Email Routing</b>.</p>\n" +
+"         <p><b class='text-blue-600'>Langkah 3:</b> Ikuti proses aktifkan Email Routing sampai statusnya berubah hijau (Routing Enabled).</p>\n" +
+"         <p><b class='text-blue-600'>Langkah 4:</b> Buka tab <b>Routing Rules</b>, scroll ke bawah ke bagian <b>Catch-all address</b>.</p>\n" +
+"         <p><b class='text-blue-600'>Langkah 5 (Terpenting):</b> Edit Catch-All. Pilih Action: <span class='bg-gray-200 px-1 rounded'>Send to a Worker</span>, dan Destination: pilih Worker tujuan Anda. Pastikan Status: Active.</p>\n" +
 "      </div>\n" +
-"      <p class='text-[8px] text-gray-400 mt-4'>&copy; HABI MAIL UNLIMITED</p>\n" +
+"      \n" +
+"      <button onclick='tutupTutorial()' class='w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 mt-5 rounded-xl text-xs uppercase shadow-md transition'>Saya Mengerti</button>\n" +
 "    </div>\n" +
 "  </div>\n" +
 "\n" +
@@ -249,11 +236,14 @@ export default {
 "  <script>\n" +
 "    const nD=['Zahra','Kania','Nabila','Kirana','Salsabila','Aurel','Nadhira','Cantika','Arsy','Syafira'];\n" +
 "    const nB=['Maharani','Larasati','Widya','Puspa','Kirani','Azzahra','Maheswari','Kusuma','Anggraini'];\n" +
-"    let lc=0; let curMsgs=[]; let targetHapus=null; let listDomain=[\"habisuno.my.id\"];\n" +
+"    let curMsgs=[]; let listDomain=[\"habisuno.my.id\"];\n" +
 "    \n" +
-"    async function loadDomains() {\n" +
-"       try { const r=await fetch('/api/domains'); listDomain=await r.json(); renderDomainDropdown(); } catch(e){}\n" +
+"    function loadDomains() {\n" +
+"       let loc = localStorage.getItem('custom_domains');\n" +
+"       if(loc) { listDomain = [\"habisuno.my.id\", ...JSON.parse(loc)]; }\n" +
+"       renderDomainDropdown();\n" +
 "    }\n" +
+"    \n" +
 "    function renderDomainDropdown() {\n" +
 "       const sel = document.getElementById('emDomain');\n" +
 "       let html = ''; listDomain.forEach(d => { html += '<option value=\"'+d+'\">'+d+'</option>'; });\n" +
@@ -275,46 +265,101 @@ export default {
 "          const full = usr + '@' + dom;\n" +
 "          document.getElementById('emFull').value = full;\n" +
 "          localStorage.setItem('he', full);\n" +
+"          cekStatusDomain(dom);\n" +
 "       }\n" +
 "    }\n" +
+"    \n" +
 "    function updateFullEmailFromLocal() {\n" +
 "       const full = localStorage.getItem('he');\n" +
 "       if(full && full.includes('@')) {\n" +
 "          const pts = full.split('@');\n" +
 "          document.getElementById('emUser').value = pts[0];\n" +
-"          if(listDomain.includes(pts[1])) { document.getElementById('emDomain').value = pts[1]; } \n" +
-"          else { listDomain.push(pts[1]); renderDomainDropdown(); document.getElementById('emDomain').value = pts[1]; }\n" +
+"          if(!listDomain.includes(pts[1])) { \n" +
+"             let loc = JSON.parse(localStorage.getItem('custom_domains') || '[]');\n" +
+"             loc.push(pts[1]); localStorage.setItem('custom_domains', JSON.stringify(loc)); loadDomains();\n" +
+"          }\n" +
+"          document.getElementById('emDomain').value = pts[1];\n" +
 "          document.getElementById('emFull').value = full;\n" +
+"          cekStatusDomain(pts[1]);\n" +
 "       } else { gr(true); }\n" +
 "    }\n" +
 "\n" +
+"    // Cek Status MX Cloudflare Live!\n" +
+"    async function cekStatusDomain(dom) {\n" +
+"       const stUI = document.getElementById('statusDomain');\n" +
+"       stUI.innerHTML = 'Sedang mengecek status jaringan domain...';\n" +
+"       stUI.className = 'text-[10px] font-bold mb-4 bg-gray-100 text-gray-600 p-2 rounded-lg border border-gray-200';\n" +
+"       if(dom === 'habisuno.my.id') {\n" +
+"          stUI.innerHTML = 'Status: 🟢 Berhasil tersambung & siap menerima pesan';\n" +
+"          stUI.className = 'text-[10px] font-bold mb-4 bg-green-50 text-green-700 p-2 rounded-lg border border-green-200';\n" +
+"          return;\n" +
+"       }\n" +
+"       try {\n" +
+"          const res = await fetch('https://cloudflare-dns.com/dns-query?name='+dom+'&type=MX', {headers: {'accept': 'application/dns-json'}});\n" +
+"          const data = await res.json();\n" +
+"          let terhubung = false;\n" +
+"          if(data.Answer) {\n" +
+"             terhubung = data.Answer.some(r => r.data.includes('cloudflare.net'));\n" +
+"          }\n" +
+"          if(terhubung) {\n" +
+"             stUI.innerHTML = 'Status: 🟢 Berhasil tersambung & siap menerima pesan';\n" +
+"             stUI.className = 'text-[10px] font-bold mb-4 bg-green-50 text-green-700 p-2 rounded-lg border border-green-200';\n" +
+"          } else {\n" +
+"             stUI.innerHTML = 'Status: 🔴 Belum terhubung perbaiki - <a href=\"#\" onclick=\"bukaTutorial()\" class=\"underline text-blue-600\">Lihat Tutorial</a>';\n" +
+"             stUI.className = 'text-[10px] font-bold mb-4 bg-red-50 text-red-600 p-2 rounded-lg border border-red-200';\n" +
+"          }\n" +
+"       } catch(e) {\n" +
+"          stUI.innerHTML = 'Status: 🟡 Gagal mengecek jaringan, pastikan Cloudflare sudah disetting.';\n" +
+"       }\n" +
+"    }\n" +
+"\n" +
+"    // Modal Master Controller\n" +
+"    function showModalMaster(title, desc) {\n" +
+"      document.getElementById('modalTitle').innerText = title;\n" +
+"      document.getElementById('modalDesc').innerText = desc;\n" +
+"      document.getElementById('modalMaster').classList.remove('hidden');\n" +
+"    }\n" +
+"    function tutupModalMaster() { document.getElementById('modalMaster').classList.add('hidden'); }\n" +
+"\n" +
 "    function salinEmail(){\n" +
 "      navigator.clipboard.writeText(document.getElementById('emFull').value);\n" +
-"      document.getElementById('modalSalin').classList.remove('hidden');\n" +
+"      showModalMaster('Tersalin Sempurna!', 'Alamat email '+document.getElementById('emFull').value+' siap beraksi. Gunakan untuk mendaftar akun tanpa takut spam menghantui.');\n" +
 "    }\n" +
-"    function tutupModalSalin() { document.getElementById('modalSalin').classList.add('hidden'); }\n" +
 "    \n" +
 "    function bukaModalDomain() { document.getElementById('modalDomain').classList.remove('hidden'); }\n" +
 "    function tutupModalDomain() { document.getElementById('modalDomain').classList.add('hidden'); }\n" +
-"    async function tambahDomain() {\n" +
-"       let val = document.getElementById('inputNewDomain').value.trim().toLowerCase();\n" +
-"       if(val && !listDomain.includes(val)) { await fetch('/api/domains', {method:'POST', body:JSON.stringify({action:'add', domain:val})}); loadDomains(); alert('Domain tersimpan permanen!'); document.getElementById('inputNewDomain').value=''; }\n" +
-"    }\n" +
-"    async function hapusDomain() {\n" +
-"       let val = document.getElementById('emDomain').value;\n" +
-"       if(val === 'habisuno.my.id') { alert('Domain utama tidak bisa dihapus!'); return; }\n" +
-"       if(confirm('Hapus '+val+' dari daftar permanen?')) { await fetch('/api/domains', {method:'POST', body:JSON.stringify({action:'del', domain:val})}); loadDomains(); }\n" +
-"    }\n" +
+"    function bukaTutorial() { document.getElementById('modalTutorial').classList.remove('hidden'); }\n" +
+"    function tutupTutorial() { document.getElementById('modalTutorial').classList.add('hidden'); }\n" +
 "\n" +
-"    function siapkanHapus(id) { targetHapus = id; document.getElementById('modalHapus').classList.remove('hidden'); }\n" +
-"    function batalHapus() { targetHapus = null; document.getElementById('modalHapus').classList.add('hidden'); }\n" +
-"    async function prosesHapus() { if(!targetHapus) return; document.getElementById('modalHapus').classList.add('hidden'); await fetch('/api/del', {method:'POST', body:JSON.stringify({id: targetHapus})}); chk(); }\n" +
+"    function tambahDomain() {\n" +
+"       let val = document.getElementById('inputNewDomain').value.trim().toLowerCase();\n" +
+"       if(val && !listDomain.includes(val)) { \n" +
+"          let loc = JSON.parse(localStorage.getItem('custom_domains') || '[]');\n" +
+"          loc.push(val); localStorage.setItem('custom_domains', JSON.stringify(loc));\n" +
+"          loadDomains(); \n" +
+"          document.getElementById('emDomain').value = val;\n" +
+"          updateFullEmail();\n" +
+"          document.getElementById('inputNewDomain').value='';\n" +
+"          showModalMaster('Domain Tersimpan!', 'Domain '+val+' berhasil ditambahkan ke perangkat Anda. Pastikan Anda telah menyetting Cloudflare-nya agar bisa menerima pesan.');\n" +
+"       }\n" +
+"    }\n" +
+"    function hapusDomain() {\n" +
+"       let val = document.getElementById('emDomain').value;\n" +
+"       if(val === 'habisuno.my.id') { showModalMaster('Akses Ditolak', 'Domain utama sistem tidak bisa dihapus!'); return; }\n" +
+"       let loc = JSON.parse(localStorage.getItem('custom_domains') || '[]');\n" +
+"       loc = loc.filter(d => d !== val);\n" +
+"       localStorage.setItem('custom_domains', JSON.stringify(loc));\n" +
+"       loadDomains();\n" +
+"       updateFullEmail();\n" +
+"       showModalMaster('Terhapus', 'Domain '+val+' telah dihapus dari daftar permanen Anda.');\n" +
+"    }\n" +
 "    \n" +
+"    async function hp(id){await fetch('/api/del',{method:'POST',body:JSON.stringify({id})}); chk();}\n" +
+"\n" +
 "    async function chk() {\n" +
 "      try {\n" +
 "        const curFull = document.getElementById('emFull').value;\n" +
 "        const r = await fetch('/api/pesan?_=' + new Date().getTime()); const d = await r.json();\n" +
-"        // Filter pesan hanya untuk email yang sedang aktif di layar\n" +
 "        curMsgs = d.filter(msg => msg.to.toLowerCase() === curFull.toLowerCase() || msg.to === \"Anda\"); \n" +
 "        renderMsgs();\n" +
 "      } catch (e) {}\n" +
@@ -343,7 +388,7 @@ export default {
 "          '<div class=\"bg-gray-100 p-4 rounded-xl text-[12px] text-gray-800 mb-4 border border-gray-200 whitespace-pre-wrap leading-relaxed overflow-x-auto\">' + p.b + '</div>' +\n" +
 "          '<div class=\"flex justify-between items-center\">' +\n" +
 "             '<span class=\"text-[9px] font-black text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100\">⏳ Sisa: ' + timeStr + '</span>' +\n" +
-"             '<button onclick=\"siapkanHapus(\\'' + p.id + '\\')\" class=\"text-[9px] font-bold text-gray-500 hover:text-red-600 uppercase transition\">Hapus Manual</button>' +\n" +
+"             '<button onclick=\"hp(\\'' + p.id + '\\')\" class=\"text-[9px] font-bold text-gray-500 hover:text-red-600 uppercase transition\">Hapus Langsung</button>' +\n" +
 "          '</div>' +\n" +
 "        '</div>';\n" +
 "      }).join('');\n" +
