@@ -45,7 +45,6 @@ export default {
   async fetch(req, env) {
     const u = new URL(req.url);
     
-    // API Tarik Pesan
     if (u.pathname === "/api/pesan") {
       try {
         let all = [];
@@ -57,7 +56,6 @@ export default {
       } catch (err) { return new Response("[]", {headers: {'Content-Type': 'application/json'}}); }
     }
     
-    // API Hapus Pesan
     if (u.pathname === "/api/del" && req.method === "POST") {
       try {
         const { id } = await req.json();
@@ -70,17 +68,21 @@ export default {
       } catch (err) { return new Response("Error"); }
     }
 
-    // API SINKRONISASI DOMAIN GLOBAL UNTUK SEMUA HP
+    // API DOMAIN GLOBAL UNTUK SEMUA HP (ANTI-KOSONG)
     if (u.pathname === "/api/domains" && req.method === "GET") {
+      let doms = [{d: "habisuno.my.id", t: "Bawaan Sistem Master", locked: true, ts: 0, isNew: false}];
       try {
-        let doms = [{d: "habisuno.my.id", t: "Bawaan Sistem Master", locked: true, ts: 0, isNew: false}];
         const ext = await env.DB.get("DOMAINS_GLOBAL");
         if(ext) { 
            let parsed = JSON.parse(ext); 
-           if(Array.isArray(parsed) && parsed.length > 0) doms = parsed; 
+           if(Array.isArray(parsed) && parsed.length > 0) {
+             // Pastikan domain master tidak pernah hilang
+             if(!parsed.find(x => x.d === "habisuno.my.id")) parsed.unshift(doms[0]);
+             doms = parsed;
+           }
         }
         return new Response(JSON.stringify(doms), {headers: {'Content-Type': 'application/json', 'Cache-Control': 'no-store'}});
-      } catch(err) { return new Response("[]", {headers: {'Content-Type': 'application/json'}}); }
+      } catch(err) { return new Response(JSON.stringify(doms), {headers: {'Content-Type': 'application/json'}}); }
     }
 
     if (u.pathname === "/api/domains" && req.method === "POST") {
@@ -88,7 +90,12 @@ export default {
         const body = await req.json();
         let doms = [{d: "habisuno.my.id", t: "Bawaan Sistem Master", locked: true, ts: 0, isNew: false}];
         const ext = await env.DB.get("DOMAINS_GLOBAL");
-        if(ext) { let parsed = JSON.parse(ext); if(Array.isArray(parsed) && parsed.length > 0) doms = parsed; }
+        if(ext) { 
+           let parsed = JSON.parse(ext); 
+           if(Array.isArray(parsed) && parsed.length > 0) doms = parsed; 
+        }
+        
+        if(!doms.find(x => x.d === "habisuno.my.id")) doms.unshift({d: "habisuno.my.id", t: "Bawaan Sistem Master", locked: true, ts: 0, isNew: false});
         
         if (body.action === "add" && body.domain) {
           if(!doms.find(x => x.d === body.domain)) {
@@ -119,12 +126,10 @@ export default {
 "    .font-google { font-family: 'Product Sans', Arial, sans-serif; font-weight: 700; letter-spacing: -2px; }\n" +
 "    .font-estetik { font-family: 'Playfair Display', serif; }\n" +
 "    \n" +
-"    /* SPLASH SCREEN YOUTUBE STYLE */\n" +
 "    #splashScreen { position: fixed; inset: 0; background: #ffffff; z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease-out; }\n" +
 "    .splash-logo { animation: splash-pulse 1.5s ease-in-out infinite alternate; }\n" +
 "    @keyframes splash-pulse { 0% { transform: scale(1); } 100% { transform: scale(1.1); } }\n" +
 "    \n" +
-"    /* PERBAIKAN ANIMASI LOGO: 100% Statik di akhir, tidak ada kilau sisa */\n" +
 "    .logo-container { \n" +
 "       display: inline-block; \n" +
 "       -webkit-mask-image: linear-gradient(-75deg, rgba(0,0,0,1) 40%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,1) 60%); \n" +
@@ -145,7 +150,6 @@ export default {
 "</head>\n" +
 "<body class='min-h-screen flex flex-col text-gray-800'>\n" +
 "\n" +
-"  \n" +
 "  <div id='splashScreen'>\n" +
 "     <h1 class='text-6xl font-google splash-logo'>\n" +
 "        <span style='color: #4285F4'>H</span><span style='color: #EA4335'>a</span><span style='color: #FBBC05'>b</span><span style='color: #4285F4'>i</span>\n" +
@@ -547,7 +551,7 @@ export default {
 "          '<div class=\"bg-gray-100 p-4 rounded-xl text-[12px] text-gray-800 mb-4 border border-gray-200 whitespace-pre-wrap leading-relaxed overflow-x-auto\">' + p.b + '</div>' +\n" +
 "          '<div class=\"flex justify-between items-center\">' +\n" +
 "             '<span class=\"text-[9px] font-black text-red-600 bg-red-50 px-3 py-1.5 rounded-lg border border-red-100\">⏳ Sisa: ' + timeStr + '</span>' +\n" +
-"             '<button onclick=\"hp(\\'' + p.id + '\\')\" class=\"text-[9px] font-bold text-gray-500 hover:text-red-600 uppercase transition\">Hapus Manual</button>' +\n" +
+"             '<button onclick=\"siapkanHapus(\\'' + p.id + '\\')\" class=\"text-[9px] font-bold text-gray-500 hover:text-red-600 uppercase transition\">Hapus Manual</button>' +\n" +
 "          '</div>' +\n" +
 "        '</div>';\n" +
 "      }).join('');\n" +
